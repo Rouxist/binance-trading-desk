@@ -1,0 +1,14 @@
+{
+    "description": "Config file",
+    "is_mock": true,
+    "traded_assets": ["BTC", "ETH", "XRP", "LTC", "TON"],
+    "n_traded_assets": 5,
+    "strategyconfig": {
+	    "strategy_name": "momentum1",
+	    "unit": "m",
+	    "every": 1,
+        "n_asset_buy": 2,
+        "n_asset_sell": 2,
+    	"asset_weight_type": "equal"
+    }
+}

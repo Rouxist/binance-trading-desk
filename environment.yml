@@ -1,0 +1,10 @@
+name: binance_trading_desk
+channels:
+  - defaults
+dependencies:
+  - python>=3.8
+  - pip>=21
+  - pip:
+      - numpy
+      - pandas
+      - apscheduler
