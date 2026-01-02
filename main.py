@@ -20,9 +20,12 @@ if __name__ == "__main__":
     raw["strategyconfig"] = StrategyConfig(**raw["strategyconfig"])
     config = MainConfig(**raw)
 
+    # TradingDesk instantiation
     trading_desk = TradingDesk(config=config, 
                                binance_api_key=BINANCE_API_KEY,
                                binance_secret_key=BINANCE_SECRET_KEY)
+    
+    # Scheduler setup
     scheduler = BlockingScheduler()
 
     if config.strategyconfig.unit == "m":
