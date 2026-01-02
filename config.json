@@ -1,6 +1,7 @@
 {
+    "session_name": "test1234",
     "description": "Config file",
-    "is_mock": true,
+    "is_mock": false,
     "traded_assets": ["BTC", "ETH", "XRP", "LTC", "TON"],
     "n_traded_assets": 5,
     "strategyconfig": {

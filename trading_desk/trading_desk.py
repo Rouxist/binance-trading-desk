@@ -1,4 +1,5 @@
-from .setup_logger import setup_logger
+from .data_models import MainConfig
+from .setup_logger import setup_logger, log_configs
 from .strategy import PositionCalculator
 from .strategy.position_model import Position
 
@@ -6,16 +7,26 @@ __all__ = ["TradingDesk"]
 
 
 class TradingDesk:
-    def __init__(self, is_mock, session_name, strategy_name, n_traded_assets, g_worksheet=None):
+    def __init__(self, config:MainConfig, binance_api_key:str, binance_secret_key:str, g_worksheet=None):
         # Hyperparameters
-        if is_mock and g_worksheet is None:
+        if config.is_mock and g_worksheet is None:
             raise ValueError("'g_worksheet' is required when 'is_mock' is True")
-        self.is_mock = is_mock
+        self.is_mock = config.is_mock
         self.g_worksheets_mock = g_worksheet
 
-        self.session_name = session_name
-        self.strategy_name = strategy_name
-        self.n_traded_assets = n_traded_assets
+        self.binance_api_key =binance_api_key
+        self.binance_secret_key = binance_secret_key
+
+        self.session_name = config.session_name
+        self.strategy_name = config.strategyconfig.strategy_name
+        self.traded_assets = config.traded_assets
+        self.n_traded_assets = config.n_traded_assets
+        
+        self.unit = config.strategyconfig.unit
+        self.every = config.strategyconfig.every
+        self.n_asset_buy = config.strategyconfig.n_asset_buy
+        self.n_asset_sell = config.strategyconfig.n_asset_sell
+        self.asset_weight_type = config.strategyconfig.asset_weight_type
 
         # Attributes
         self.positions_holding: List[Position] = []
@@ -29,6 +40,12 @@ class TradingDesk:
         self.logger = setup_logger(session_name=self.session_name, 
                                    strategy_name=self.strategy_name, 
                                    log_console=True)
+        
+        ## Configuration logging
+        self.logger.info("TradingDesk is instantiated.")
+        self.logger.info(f"Binance API key    = {self.binance_api_key}")
+        self.logger.info(f"Binance SECRET key = {self.binance_secret_key}")
+        log_configs(logger=self.logger, config=config)
 
         ## Account
         if self.is_mock:
@@ -37,8 +54,7 @@ class TradingDesk:
         else:
             # Clear positions in binance account
             pass
-        
-        self.logger.info("TradingDesk is instantiated.")
+
 
     def strategy_func(self):
         self.logger.info("strategy_func is executed")

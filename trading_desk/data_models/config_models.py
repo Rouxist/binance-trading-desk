@@ -13,6 +13,7 @@ class StrategyConfig:
 
 @dataclass
 class MainConfig:
+    session_name: str
     description: str
     is_mock: bool
     traded_assets: List[str]
