@@ -1,21 +1,19 @@
-import datetime
-import logging
-from logging.handlers import RotatingFileHandler
-
+from .setup_logger import setup_logger
 from .strategy import PositionCalculator
-
 from .strategy.position_model import Position
 
 __all__ = ["TradingDesk"]
 
 
 class TradingDesk:
-    def __init__(self, is_mock, strategy_name, n_traded_assets, g_worksheet=None):
+    def __init__(self, is_mock, session_name, strategy_name, n_traded_assets, g_worksheet=None):
         # Hyperparameters
         if is_mock and g_worksheet is None:
             raise ValueError("'g_worksheet' is required when 'is_mock' is True")
         self.is_mock = is_mock
         self.g_worksheets_mock = g_worksheet
+
+        self.session_name = session_name
         self.strategy_name = strategy_name
         self.n_traded_assets = n_traded_assets
 
@@ -28,27 +26,9 @@ class TradingDesk:
 
         # Initialization
         ## Logger
-        self.logger = logging.getLogger("my_app")
-        self.logger.setLevel(logging.INFO)
-
-        formatter = logging.Formatter(
-            "%(asctime)s :: [%(levelname)s] :: %(message)s"
-        )
-
-        ### File handler setup
-        file_handler = RotatingFileHandler(
-            f"./logs/{strategy_name}__{datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}.log",
-            maxBytes=1024*1024*10,  # 10 MB
-            backupCount=5           # up to 5 log files
-        )
-        file_handler.setFormatter(formatter)
-
-        ### Console handler setup
-        console_handler = logging.StreamHandler()
-        console_handler.setFormatter(formatter)
-
-        self.logger.addHandler(file_handler)
-        self.logger.addHandler(console_handler)
+        self.logger = setup_logger(session_name=self.session_name, 
+                                   strategy_name=self.strategy_name, 
+                                   log_console=True)
 
         ## Account
         if self.is_mock:
@@ -58,7 +38,7 @@ class TradingDesk:
             # Clear positions in binance account
             pass
         
-        self.logger.info("TradingDesk is created.")
+        self.logger.info("TradingDesk is instantiated.")
 
     def strategy_func(self):
         self.logger.info("strategy_func is executed")
