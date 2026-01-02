@@ -1,16 +1,22 @@
+# Byte-compiled files
 __pycache__/
-.DS_Store
-._.DS_Store
-**/.DS_Store
-**/._.DS_Store
 
 # editor, os cache directory
 .vscode/
 .idea/
 __MACOSX/
 
+# google spreadsheet key file
+trading_desk/gspread/gspread_key/
+
 # logs
 logs/
 
 # scripts
 temp_*.py
+
+# misc
+.DS_Store
+._.DS_Store
+**/.DS_Store
+**/._.DS_Store

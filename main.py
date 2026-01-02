@@ -21,7 +21,6 @@ if __name__ == "__main__":
     config = MainConfig(**raw)
 
     trading_desk = TradingDesk(config=config, 
-                               g_worksheet=None, 
                                binance_api_key=BINANCE_API_KEY,
                                binance_secret_key=BINANCE_SECRET_KEY)
     scheduler = BlockingScheduler()

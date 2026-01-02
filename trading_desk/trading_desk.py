@@ -1,5 +1,6 @@
 from .data_models import MainConfig
 from .setup_logger import setup_logger, log_configs
+from .gspread import init_gspread
 from .strategy import PositionCalculator
 from .strategy.position_model import Position
 
@@ -7,12 +8,9 @@ __all__ = ["TradingDesk"]
 
 
 class TradingDesk:
-    def __init__(self, config:MainConfig, binance_api_key:str, binance_secret_key:str, g_worksheet=None):
+    def __init__(self, config:MainConfig, binance_api_key:str, binance_secret_key:str):
         # Hyperparameters
-        if config.is_mock and g_worksheet is None:
-            raise ValueError("'g_worksheet' is required when 'is_mock' is True")
         self.is_mock = config.is_mock
-        self.g_worksheets_mock = g_worksheet
 
         self.binance_api_key =binance_api_key
         self.binance_secret_key = binance_secret_key
@@ -47,10 +45,10 @@ class TradingDesk:
         self.logger.info(f"Binance SECRET key = {self.binance_secret_key}")
         log_configs(logger=self.logger, config=config)
 
-        ## Account
+        ## Account initialization
         if self.is_mock:
-            # Create new google spreadsheet page and initialize
-            pass
+            self.g_worksheets_mock = init_gspread(session_name=self.session_name,
+                                                  tmux_session_name=config.tmux_session_name)
         else:
             # Clear positions in binance account
             pass

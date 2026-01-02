@@ -1,7 +1,8 @@
 {
     "session_name": "test1234",
+    "tmux_session_name": "test1234",
     "description": "Config file",
-    "is_mock": false,
+    "is_mock": true,
     "traded_assets": ["BTC", "ETH", "XRP", "LTC", "TON"],
     "n_traded_assets": 5,
     "strategyconfig": {
