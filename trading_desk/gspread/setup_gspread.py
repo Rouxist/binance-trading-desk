@@ -1,12 +1,12 @@
 import datetime
 import os
+import string
 
 ## gspread
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 
-def init_gspread(session_name:str,
-                 tmux_session_name:str):
+def init_gspread(session_name:str):
     scope = [
     'https://spreadsheets.google.com/feeds',
     'https://www.googleapis.com/auth/drive',
@@ -28,12 +28,42 @@ def init_gspread(session_name:str,
                           rows=100, 
                           cols=20)
     else:
-        timestamp = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
-        worksheet_title = f"{session_name}_new_{timestamp}"
-        doc.add_worksheet(title=worksheet_title,
-                          rows=100, 
-                          cols=20)
+        raise ValueError("Worksheet with the same name is existing")
 
     ws = doc.worksheet(session_name)
 
     return ws
+
+def num_to_col(num):
+    col = ""
+    while num > 0:
+        num, rem = divmod(num - 1, 26)
+        col = chr(rem + ord('A')) + col
+    return col
+
+def setup_worksheet_format(worksheet,
+                           strategy_name:str,
+                           init_capital:float,
+                           traded_assets:List[str],
+                           tmux_session_name:str):
+    # Alais
+    CELL_CAPITAL = "C2"      
+
+    # Session info
+    worksheet.update([["strategy", strategy_name]], "B2:C2")
+    worksheet.update([["init_capital", init_capital]], "B3:C3")
+    worksheet.update([["curret_capital", init_capital]], "B4:C4")
+    worksheet.update([["running_capital", 0]], "B5:C5")
+    worksheet.update([["tmux_session_name", tmux_session_name]], "B6:C6")
+    worksheet.update([["sheet_created(UTC+0)", datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")]], "B7:C7")
+
+    # Transaction history
+    header_list = []
+    header_list.append("Timestamp")
+    header_list.extend([symbol+"_amount" for symbol in traded_assets])
+    header_list.extend([symbol+"_entry_price" for symbol in traded_assets])
+    header_list.extend(["position", "open_close", "running_capital", "capital"])
+
+    start_col = 2
+    row_idx = len(worksheet.col_values(start_col)) + 2
+    worksheet.update([header_list], f"{num_to_col(start_col)}{row_idx}:{num_to_col(start_col + len(header_list) - 1)}{row_idx}")

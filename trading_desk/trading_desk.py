@@ -1,6 +1,6 @@
 from .data_models import MainConfig
 from .setup_logger import setup_logger, log_configs
-from .gspread import init_gspread
+from .gspread import init_gspread, setup_worksheet_format
 from .strategy import PositionCalculator
 from .strategy.position_model import Position
 
@@ -16,9 +16,11 @@ class TradingDesk:
         self.binance_secret_key = binance_secret_key
 
         self.session_name = config.session_name
+        self.tmux_session_name = config.tmux_session_name
         self.strategy_name = config.strategyconfig.strategy_name
         self.traded_assets = config.traded_assets
         self.n_traded_assets = config.n_traded_assets
+        self.init_capital = config.init_capital
         
         self.unit = config.strategyconfig.unit
         self.every = config.strategyconfig.every
@@ -47,8 +49,13 @@ class TradingDesk:
 
         ## Account initialization
         if self.is_mock:
-            self.g_worksheets_mock = init_gspread(session_name=self.session_name,
-                                                  tmux_session_name=config.tmux_session_name)
+            self.g_worksheets_mock = init_gspread(session_name=self.session_name)
+
+            setup_worksheet_format(worksheet=self.g_worksheets_mock,
+                                   strategy_name=self.strategy_name, 
+                                   init_capital=self.init_capital,
+                                   traded_assets=self.traded_assets,
+                                   tmux_session_name=self.tmux_session_name)
         else:
             # Clear positions in binance account
             pass

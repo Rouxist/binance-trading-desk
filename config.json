@@ -5,6 +5,7 @@
     "is_mock": true,
     "traded_assets": ["BTC", "ETH", "XRP", "LTC", "TON"],
     "n_traded_assets": 5,
+    "init_capital": 500.0,
     "strategyconfig": {
 	    "strategy_name": "momentum1",
 	    "unit": "m",

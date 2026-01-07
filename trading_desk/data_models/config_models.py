@@ -19,4 +19,5 @@ class MainConfig:
     is_mock: bool
     traded_assets: List[str]
     n_traded_assets: int
+    init_capital: float
     strategyconfig: StrategyConfig
