@@ -68,4 +68,9 @@ def setup_worksheet_format(worksheet,
 
     start_col = 2
     row_idx = len(worksheet.col_values(start_col)) + 2
-    worksheet.update([header_list], f"{num_to_col(start_col)}{row_idx}:{num_to_col(start_col + len(header_list) - 1)}{row_idx}")
+    end_col = start_col + len(header_list) - 1
+    update_range = (
+        f"{num_to_col(start_col)}{row_idx}:"
+        f"{num_to_col(end_col)}{row_idx}"
+    )
+    worksheet.update([header_list], update_range)
