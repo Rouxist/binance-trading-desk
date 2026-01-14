@@ -38,6 +38,7 @@ class PositionCalculator:
                 pos = Position(
                                 symbol=symbol_top,
                                 position=1,
+                                fetched_price=None,
                                 entry_price=None,
                                 quantity=None,
                                 amount=None
@@ -48,6 +49,7 @@ class PositionCalculator:
                 pos = Position(
                                 symbol=symbol_bottom,
                                 position=-1,
+                                fetched_price=None,
                                 entry_price=None,
                                 quantity=None,
                                 amount=None

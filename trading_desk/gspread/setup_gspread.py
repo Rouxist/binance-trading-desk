@@ -62,8 +62,9 @@ def setup_worksheet_format(worksheet,
     header_list.append("Timestamp")
     header_list.extend([symbol+"_fetched_price" for symbol in traded_assets])   # Price fetched right before executing the order through the API
     header_list.extend([symbol+"_position" for symbol in traded_assets])
+    header_list.extend([symbol+"_entry_price" for symbol in traded_assets])  # Price finalized after the order is executed
     header_list.extend([symbol+"_amount" for symbol in traded_assets])
-    header_list.extend([symbol+"_executed_price" for symbol in traded_assets])  # Price finalized after the order is executed
+    header_list.extend([symbol+"_quantity" for symbol in traded_assets])
     header_list.extend([
         "position", "open_close", 
         "running_capital", "capital"
