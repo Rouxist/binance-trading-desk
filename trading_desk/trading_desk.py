@@ -3,6 +3,7 @@ from .setup_logger import setup_logger, log_configs
 from .gspread import init_gspread, setup_worksheet_format
 from .strategy import PositionCalculator
 from .strategy.position_model import Position
+from .functions import APIHandler, build_closing_price_series, build_dataframe
 
 __all__ = ["TradingDesk"]
 
@@ -20,6 +21,7 @@ class TradingDesk:
         self.strategy_name = config.strategyconfig.strategy_name
         self.traded_assets = config.traded_assets
         self.n_traded_assets = config.n_traded_assets
+        
         self.init_capital = config.init_capital
         
         self.unit = config.strategyconfig.unit
@@ -32,6 +34,7 @@ class TradingDesk:
         self.positions_holding: List[Position] = []
 
         # Objects
+        self.api_handler=APIHandler()
         self.position_calculator = PositionCalculator(strategy_name = self.strategy_name,
                                                       n_traded_assets = self.n_traded_assets)
 
@@ -92,13 +95,25 @@ class TradingDesk:
                     # else:
                     #     self.logger.info(f"{position.position} order of {position.symbol} was not successfully cleared")
 
+
         """
         Step 2
         : Position calculation
         """
 
-        # data = fetch_data()
-        positions = self.position_calculator.get_positions(data=None)
+        # Fetch data and build DataFrame
+        close_prices = {}
+
+        for symbol in self.traded_assets:
+            klines = self.api_handler.fetch_klines(symbol=symbol,
+                                                   every=self.every,
+                                                   unit=self.unit,
+                                                   timesteps=13)
+            close_prices[symbol] = build_closing_price_series(klines)
+
+        df = build_dataframe(close_prices)
+
+        positions = self.position_calculator.get_positions(data=df)
 
 
         """
@@ -127,6 +142,7 @@ class TradingDesk:
                 #     self.positions_holding.append(position)
                 # else:
                 #     self.logger.info(f"{position.position} order of {position.symbol} was not successfully executed")
+
 
     def run_strategy(self):
         self.strategy_func()
