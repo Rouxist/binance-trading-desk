@@ -46,7 +46,7 @@ def setup_worksheet_format(worksheet,
                            init_capital:float,
                            traded_assets:List[str],
                            tmux_session_name:str):
-    # Alais
+    # Alias
     CELL_CAPITAL = "C2"      
 
     # Session info
@@ -60,6 +60,8 @@ def setup_worksheet_format(worksheet,
     # Transaction history
     header_list = []
     header_list.append("Timestamp")
+    header_list.extend([symbol+"_price" for symbol in traded_assets])
+    header_list.extend([symbol+"_position" for symbol in traded_assets])
     header_list.extend([symbol+"_amount" for symbol in traded_assets])
     header_list.extend([symbol+"_entry_price" for symbol in traded_assets])
     header_list.extend(["position", "open_close", "running_capital", "capital"])
