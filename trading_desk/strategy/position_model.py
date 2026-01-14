@@ -6,3 +6,4 @@ class Position:
     position: int
     entry_price: float
     quantity: float
+    amount: float

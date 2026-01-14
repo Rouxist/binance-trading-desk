@@ -112,8 +112,10 @@ class TradingDesk:
             close_prices[symbol] = build_closing_price_series(klines)
 
         df = build_dataframe(close_prices)
-
-        positions = self.position_calculator.get_positions(data=df)
+        
+        positions = self.position_calculator.get_positions(data=df,
+                                                           n_asset_buy=self.n_asset_buy,
+                                                           n_asset_sell=self.n_asset_sell)
 
 
         """
