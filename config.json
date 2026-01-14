@@ -3,7 +3,7 @@
     "tmux_session_name": "test1234",
     "description": "Config file",
     "is_mock": true,
-    "traded_assets": ["BTC", "ETH", "XRP", "LTC", "TON"],
+    "traded_assets": ["BTCUSDT", "ETHUSDT", "XRPUSDT", "LTCUSDT", "TONUSDT"],
     "n_traded_assets": 5,
     "init_capital": 500.0,
     "strategyconfig": {

@@ -44,7 +44,7 @@ def log_configs(logger, config:MainConfig):
     # Setup header line
     name_width=40
     value_width=40
-    n_symbols_per_row = 5
+    n_symbols_per_row = 4
 
     config_log_header = f"{'Config':^{name_width}} | {'Value':^{value_width}}"
     config_log_separator = f"{'-' * name_width}-+-{'-' * value_width}"
