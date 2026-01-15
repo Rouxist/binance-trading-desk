@@ -1,6 +1,6 @@
 from .data_models import MainConfig
 from .setup_logger import setup_logger, log_configs
-from .gspread import init_gspread, setup_worksheet_format
+from .gspread import init_gspread, setup_worksheet_format, add_transaction_log
 from .strategy import PositionCalculator
 from .strategy.position_model import Position
 from .functions import APIHandler, build_closing_price_series, build_dataframe
@@ -31,10 +31,12 @@ class TradingDesk:
         self.asset_weight_type = config.strategyconfig.asset_weight_type
 
         # Attributes
+        self.capital = config.init_capital
+        self.running_capital = 0
         self.positions_holding: List[Position] = []
 
         # Objects
-        self.api_handler=APIHandler()
+        self.api_handler = APIHandler()
         self.position_calculator = PositionCalculator(strategy_name = self.strategy_name,
                                                       n_traded_assets = self.n_traded_assets)
 
@@ -94,7 +96,10 @@ class TradingDesk:
                     #     self.positions_holding.append(position)
                     # else:
                     #     self.logger.info(f"{position.position} order of {position.symbol} was not successfully cleared")
-
+        """
+        To-Do:
+        - update self.running_capital, self.capital
+        """
 
         """
         Step 2
@@ -123,27 +128,67 @@ class TradingDesk:
         : Open new positions
         """
 
-        for position in positions:
-            if self.is_mock:
-                pass
-                # if position.position == 1:
-                #     res = place_mock_market_buy(symbol=position.symbol)
-                # elif positions.position == -1:
-                #     res = place_mock_market_sell(symbol=position.symbol)
-                # if res == success:
-                #     self.positions_holding.append(position)
-                # else:
-                #     self.logger.info(f"mock {position.position} order of {position.symbol} was not successfully executed")
+        # Calculate budget allocation (amount) for each asset
+        if self.asset_weight_type=="equal":
+            amount = self.capital / (self.n_asset_buy+self.n_asset_sell)
+
+            for position in positions:
+                position.amount = amount
+
+        else:
+            raise NotImplementedError(f"Asset weight type '{self.asset_weight_type}' is not supported yet")
+
+        # Make (mock) order for each asset
+        symbols_to_trade = [p.symbol for p in positions]
+        
+        for symbol in self.traded_assets:
+            if symbol in symbols_to_trade:
+                position = next((p for p in positions if p.symbol == symbol), None)
+                fetched_price = self.api_handler.get_current_price(symbol=position.symbol)
+                position.fetched_price = fetched_price
+                quantity = position.amount / fetched_price # To-Do: consider quantityPrecision of each asset
+
+                if self.is_mock:
+                    position.quantity = quantity
+                    position.entry_price = fetched_price
+                    position.amount = position.position*quantity*fetched_price
+
+                    self.running_capital = 123
+                    self.capital = 321
+                    """
+                    To-Do:
+                    - update self.running_capital and self.capital
+                    """
+
+                else:
+
+                    pass
+                    """
+                    To-Do:
+                    - make order via the "/fapi/v1/order" endpoint
+                    - if successful, update `position` using actual executed price and quantity
+                    - update self.running_capital and self.capital
+                    """
+
             else:
-                pass
-                # if positions.position == 1:
-                #     res = place_market_buy(symbol=position.symbol)
-                # elif positions.position == -1:
-                #     res = place_market_sell(symbol=position.symbol)
-                # if res == success:
-                #     self.positions_holding.append(position)
-                # else:
-                #     self.logger.info(f"{position.position} order of {position.symbol} was not successfully executed")
+                position = Position(
+                                symbol=symbol,
+                                position=0,
+                                fetched_price=0,
+                                entry_price=0,
+                                quantity=0,
+                                amount=0
+                            )
+
+            self.positions_holding.append(position)
+
+        add_transaction_log(worksheet=self.g_worksheets_mock,
+                            positions_holding=self.positions_holding,
+                            open_close="open",
+                            running_capital=self.running_capital,
+                            capital=self.capital)
+        
+        # self.logger.info(f"Toal {len(self.positions_holding)} orders are successfully executed")
 
 
     def run_strategy(self):

@@ -56,6 +56,19 @@ class APIHandler:
             return response["serverTime"]
         else:
             return datetime.datetime.utcfromtimestamp(response["serverTime"]/1000)
+    
+    def get_current_price(self, 
+                          symbol:str):
+        
+        params = {
+            "symbol": symbol
+        }
+
+        response = self.fetch(endpoint="/fapi/v1/ticker/price",
+                              method="GET",
+                              params=params)
+        
+        return float(response["price"])
 
 
     def fetch_klines(self, 

@@ -60,14 +60,24 @@ def setup_worksheet_format(worksheet,
     # Transaction history
     header_list = []
     header_list.append("Timestamp")
-    header_list.extend([symbol+"_fetched_price" for symbol in traded_assets])   # Price fetched right before executing the order through the API
-    header_list.extend([symbol+"_position" for symbol in traded_assets])
-    header_list.extend([symbol+"_entry_price" for symbol in traded_assets])  # Price finalized after the order is executed
-    header_list.extend([symbol+"_amount" for symbol in traded_assets])
-    header_list.extend([symbol+"_quantity" for symbol in traded_assets])
+
+    # header_list.extend([symbol+"_fetched_price" for symbol in traded_assets])   # Price fetched right before executing the order through the API
+    # header_list.extend([symbol+"_position" for symbol in traded_assets])
+    # header_list.extend([symbol+"_entry_price" for symbol in traded_assets])  # Price finalized after the order is executed
+    # header_list.extend([symbol+"_amount" for symbol in traded_assets])
+    # header_list.extend([symbol+"_quantity" for symbol in traded_assets])
+
+    for symbol in traded_assets:
+        header_list.extend([
+            f"{symbol}_fetched_price",
+            f"{symbol}_position",
+            f"{symbol}_entry_price",
+            f"{symbol}_amount",
+            f"{symbol}_quantity",
+        ])
+
     header_list.extend([
-        "position", "open_close", 
-        "running_capital", "capital"
+        "open_close", "running_capital", "capital"
     ])
 
     start_col = 2
@@ -77,4 +87,5 @@ def setup_worksheet_format(worksheet,
         f"{num_to_col(start_col)}{row_idx}:"
         f"{num_to_col(end_col)}{row_idx}"
     )
+
     worksheet.update([header_list], update_range)
