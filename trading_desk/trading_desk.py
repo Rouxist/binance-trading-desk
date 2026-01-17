@@ -1,9 +1,10 @@
+import math
 from .data_models import MainConfig
 from .setup_logger import setup_logger, log_configs
 from .gspread import init_gspread, setup_worksheet_format, add_transaction_log
 from .strategy import PositionCalculator
 from .strategy.position_model import Position
-from .functions import APIHandler, build_closing_price_series, build_dataframe
+from .functions import APIHandler, build_closing_price_series, build_dataframe, get_quantity_precision, get_min_order_quantity
 
 __all__ = ["TradingDesk"]
 
@@ -37,8 +38,8 @@ class TradingDesk:
 
         # Objects
         self.api_handler = APIHandler()
-        self.position_calculator = PositionCalculator(strategy_name = self.strategy_name,
-                                                      n_traded_assets = self.n_traded_assets)
+        self.position_calculator = PositionCalculator(strategy_name=self.strategy_name,
+                                                      n_traded_assets=self.n_traded_assets)
 
         # Initialization
         ## Logger
@@ -146,7 +147,20 @@ class TradingDesk:
                 position = next((p for p in positions if p.symbol == symbol), None)
                 fetched_price = self.api_handler.get_current_price(symbol=position.symbol)
                 position.fetched_price = fetched_price
-                quantity = position.amount / fetched_price # To-Do: consider quantityPrecision of each asset
+
+                quantity_precision = get_quantity_precision(api_handler=self.api_handler,
+                                                            symbol=symbol)
+                
+                factor = 10**quantity_precision
+                quantity = position.amount / fetched_price
+                quantity_rounded_up = math.ceil(quantity*factor)/factor  # round up at quantity precision decimal points
+
+                min_order_quantity = get_min_order_quantity(api_handler=self.api_handler,
+                                                            symbol=symbol)
+
+                """
+                If quantity < min_quantity, log and do not place order(use `continue`).
+                """
 
                 if self.is_mock:
                     position.quantity = quantity

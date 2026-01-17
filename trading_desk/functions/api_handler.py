@@ -56,7 +56,29 @@ class APIHandler:
             return response["serverTime"]
         else:
             return datetime.datetime.utcfromtimestamp(response["serverTime"]/1000)
-    
+
+
+    def get_exchange_info(self):
+
+        response = self.fetch(endpoint="/fapi/v1/exchangeInfo",
+                              method="GET")
+        
+        return response
+
+
+    def get_premium_index(self,
+                          symbol:str):
+        params = {
+            "symbol": symbol
+        }
+
+        response = self.fetch(endpoint="/fapi/v1/premiumIndex",
+                              method="GET",
+                              params=params)
+        
+        return response
+
+
     def get_current_price(self, 
                           symbol:str):
         
