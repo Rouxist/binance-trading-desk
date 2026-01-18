@@ -14,12 +14,18 @@ class TradingDesk:
         # Hyperparameters
         self.is_mock = config.is_mock
 
-        self.binance_api_key =binance_api_key
+        self.binance_api_key = binance_api_key
         self.binance_secret_key = binance_secret_key
 
         self.session_name = config.session_name
         self.tmux_session_name = config.tmux_session_name
         self.strategy_name = config.strategyconfig.strategy_name
+
+        if config.n_traded_assets != len(config.traded_assets):
+            raise ValueError(
+                f"traded_assets contains {len(config.traded_assets)} elements, but n_traded_assets is set to {config.n_traded_assets}."
+            )
+        
         self.traded_assets = config.traded_assets
         self.n_traded_assets = config.n_traded_assets
         
