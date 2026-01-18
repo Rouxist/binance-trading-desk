@@ -152,8 +152,8 @@ class TradingDesk:
                                                             symbol=symbol)
                 
                 factor = 10**quantity_precision
-                quantity = position.amount / fetched_price
-                quantity_rounded_up = math.ceil(quantity*factor)/factor  # round up at quantity precision decimal points
+                quantity = position.amount / fetched_price # Order quantity is calculated using last-traded-price fetched from '/fapi/v1/ticker/price'.
+                quantity_rounded_down = math.floor(quantity*factor)/factor  # round down at quantity precision decimal points
 
                 min_order_quantity = get_min_order_quantity(api_handler=self.api_handler,
                                                             symbol=symbol)
