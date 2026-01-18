@@ -44,8 +44,7 @@ class TradingDesk:
 
         # Objects
         self.api_handler = APIHandler()
-        self.position_calculator = PositionCalculator(strategy_name=self.strategy_name,
-                                                      n_traded_assets=self.n_traded_assets)
+        self.position_calculator = PositionCalculator(strategy_name=self.strategy_name)
 
         # Initialization
         ## Logger

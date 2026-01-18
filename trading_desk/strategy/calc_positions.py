@@ -3,14 +3,13 @@ from .position_model import Position
 from .strat_momentum1 import strat_momentum1
 
 class PositionCalculator:
-    def __init__(self, strategy_name, n_traded_assets):
+    def __init__(self, strategy_name):
         self.supported_strategy_list = ["momentum1"]
 
         if strategy_name not in self.supported_strategy_list:
             raise Exception("Strategy name is not valid")
 
         self.strategy_name = strategy_name
-        self.n_traded_assets = n_traded_assets
 
 
     def get_positions(self, 
