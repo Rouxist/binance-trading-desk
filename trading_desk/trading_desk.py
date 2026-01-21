@@ -85,6 +85,10 @@ class TradingDesk:
         
         if self.positions_holding: # If positions_holding is not empty
             for position in self.positions_holding:
+                """
+                To-Do: Determine whether the asset exists in the account
+                by non-negativity of quantity, not non-zero position.
+                """
                 if self.is_mock:
                     pass
                     # if position.position == 1:
@@ -156,8 +160,9 @@ class TradingDesk:
         self.logger.info(f"Symbols to trade: {[f"{p.symbol}:{p.position}" for p in positions]}")
         
         for symbol in self.traded_assets:
+            position = next((p for p in positions if p.symbol == symbol), None)
+
             if symbol in symbols_to_trade:
-                position = next((p for p in positions if p.symbol == symbol), None)
                 fetched_price = self.api_handler.get_current_price(symbol=position.symbol)
                 position.fetched_price = fetched_price
 
@@ -176,6 +181,11 @@ class TradingDesk:
                     self.logger.info(f"Order for {symbol} is not executed because "
                                      f"the calculated order quantity {quantity_rounded_down} is "
                                      f"below the current minimum order quantity {min_order_quantity}.")
+                    
+                    position.quantity = -1
+                    position.entry_price = 0
+                    position.amount = 0
+                    self.positions_holding.append(position)
                     continue
 
                 ## Order placement
@@ -219,6 +229,7 @@ class TradingDesk:
                                 amount=0
                             )
 
+
             self.positions_holding.append(position)
 
         add_transaction_log(worksheet=self.g_worksheets_mock,
@@ -227,7 +238,7 @@ class TradingDesk:
                             running_capital=self.running_capital,
                             capital=self.capital)
         
-        # self.logger.info(f"Toal {len(self.positions_holding)} orders are successfully executed")
+        self.logger.info(f"After execution, positions_holding = {self.positions_holding}")
 
 
     def run_strategy(self):
