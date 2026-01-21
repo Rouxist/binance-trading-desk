@@ -37,6 +37,9 @@ class TradingDesk:
         self.n_asset_sell = config.strategyconfig.n_asset_sell
         self.asset_weight_type = config.strategyconfig.asset_weight_type
 
+        # Exchange hyperparameters
+        self.transaction_cost = 0.0005
+
         # Attributes
         self.capital = config.init_capital
         self.running_capital = 0
@@ -102,6 +105,9 @@ class TradingDesk:
                     #     self.positions_holding.append(position)
                     # else:
                     #     self.logger.info(f"{position.position} order of {position.symbol} was not successfully cleared")
+        else:
+            self.logger.info("No open position. Position clearing has been skipped.")
+
         """
         To-Do:
         - update self.running_capital, self.capital
@@ -146,6 +152,8 @@ class TradingDesk:
 
         # Make (mock) order for each asset
         symbols_to_trade = [p.symbol for p in positions]
+    
+        self.logger.info(f"Symbols to trade: {[f"{p.symbol}:{p.position}" for p in positions]}")
         
         for symbol in self.traded_assets:
             if symbol in symbols_to_trade:
@@ -157,27 +165,39 @@ class TradingDesk:
                                                             symbol=symbol)
                 
                 factor = 10**quantity_precision
-                quantity = position.amount / fetched_price # Order quantity is calculated using last-traded-price fetched from '/fapi/v1/ticker/price'.
-                quantity_rounded_down = math.floor(quantity*factor)/factor  # round down at quantity precision decimal points
+                quantity = position.amount/fetched_price # Order quantity is calculated using last-traded-price fetched from '/fapi/v1/ticker/price'.
+                quantity_rounded_down = math.floor(quantity*factor)/factor # round down at quantity precision decimal points
 
                 min_order_quantity = get_min_order_quantity(api_handler=self.api_handler,
                                                             symbol=symbol)
 
-                """
-                If quantity < min_quantity, log and do not place order(use `continue`).
-                """
+                ## Do NOT place order if calculated quantity is less then minimum order quantity
+                if quantity_rounded_down < min_order_quantity:
+                    self.logger.info(f"Order for {symbol} is not executed because "
+                                     f"the calculated order quantity {quantity_rounded_down} is "
+                                     f"below the current minimum order quantity {min_order_quantity}.")
+                    continue
 
+                ## Order placement
                 if self.is_mock:
-                    position.quantity = quantity
+                    """
+                    Fee deduction example: open short -> close with long
+                    
+                    Quantity |  Price  | Position | Executed |     Fee    | Fee deducted |  balance
+                    ---------------------------------------------------------------------------------
+                             |         |          |          |            |              |  6.742414
+                         3.1 |  2.1915 |       -1 |  6.7937  | 0.00339683 |       6.7903 | 13.532667
+                         3.1 |  2.1908 |        1 | -6.7915  | 0.00339574 |      -6.7949 |  6.737791
+                    """
+                    order_amount = -1*position.position*quantity_rounded_down*fetched_price              # `Executed`
+                    order_amount_after_fee = order_amount*(1 + position.position*self.transaction_cost)  # `Fee deducted`
+                    
+                    position.quantity = quantity_rounded_down
                     position.entry_price = fetched_price
-                    position.amount = position.position*quantity*fetched_price
+                    position.amount = order_amount_after_fee
 
-                    self.running_capital = 123
-                    self.capital = 321
-                    """
-                    To-Do:
-                    - update self.running_capital and self.capital
-                    """
+                    self.running_capital += order_amount_after_fee
+                    self.capital -= order_amount_after_fee
 
                 else:
 
