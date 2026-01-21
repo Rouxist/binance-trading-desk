@@ -5,6 +5,7 @@ def get_min_order_quantity(api_handler,
     """
     Calculate the minimum order quantity for an asset.
     The calculation is mainly based on data retrieved from the '/fapi/v1/exchangeInfo' endpoint.
+    (docs: https://developers.binance.com/docs/derivatives/usds-margined-futures/market-data/rest-api/Exchange-Information)
     In the response, the specifications of each crypto in the 'symbols' attribute are utilized.
 
     Example: BTCUSDT specifications from `response["symbols"]`:
@@ -46,6 +47,7 @@ def get_min_order_quantity(api_handler,
         - 'stepSize'='0.001' means order quantities must be in increment of 0.001.
     - Additionally, 'markPrice' is retrieved from the '/fapi/v1/premiumIndex' endpoint
       to utilize **real-time** fair price information for the asset.
+      - docs: https://developers.binance.com/docs/derivatives/usds-margined-futures/market-data/rest-api/Mark-Price
 
     Main calculation
     ---
