@@ -10,9 +10,10 @@ def num_to_col(num):
 def add_transaction_log(worksheet,
                         positions_holding,
                         open_close:str,
-                        running_capital:float,
+                        collateral_long:float, 
+                        collateral_short:float,
                         capital:float): # List elements are not type-casted
-    
+
     # Compose transaction row
     row_element_list = []
 
@@ -31,7 +32,7 @@ def add_transaction_log(worksheet,
         ])
 
     ## Add account info
-    row_element_list.extend([open_close, running_capital, capital])
+    row_element_list.extend([open_close, collateral_long, collateral_short, capital])
 
     # Update worksheet
     start_col = 2

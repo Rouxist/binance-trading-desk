@@ -43,6 +43,8 @@ class TradingDesk:
         # Attributes
         self.capital = config.init_capital
         self.running_capital = 0
+        self.collateral_long = 0
+        self.collateral_short = 0
         self.positions_holding: List[Position] = []
 
         # Objects
@@ -107,6 +109,12 @@ class TradingDesk:
                                             amount=amount_clearing_after_fee
                                         )
 
+                        # Update balance status
+                        if position.position==1:
+                            self.collateral_long -= abs(position.amount)
+                        if position.position==-1:
+                            self.collateral_short -= abs(position.amount)
+
                         self.capital += amount_clearing_after_fee
                         
                     else:
@@ -138,7 +146,8 @@ class TradingDesk:
             add_transaction_log(worksheet=self.g_worksheets_mock,
                                 positions_holding=cleared_positions,
                                 open_close="close",
-                                running_capital=0,
+                                collateral_long=self.collateral_long,
+                                collateral_short=self.collateral_short,
                                 capital=self.capital)
         
             if not self.positions_holding: # If self.positions_holding is empty
@@ -244,6 +253,12 @@ class TradingDesk:
                     position.entry_price = fetched_price
                     position.amount = order_amount_after_fee
 
+                    # Update balance status
+                    if position.position==1:
+                        self.collateral_long += abs(order_amount_after_fee)
+                    if position.position==-1:
+                        self.collateral_short += abs(order_amount_after_fee)
+
                     self.capital += order_amount_after_fee
 
                 else:
@@ -272,7 +287,8 @@ class TradingDesk:
         add_transaction_log(worksheet=self.g_worksheets_mock,
                             positions_holding=self.positions_holding,
                             open_close="open",
-                            running_capital=self.running_capital,
+                            collateral_long=self.collateral_long, 
+                            collateral_short=self.collateral_short,
                             capital=self.capital)
         
         self.logger.info(f"After step 3, positions_holding = {self.positions_holding}")

@@ -53,19 +53,14 @@ def setup_worksheet_format(worksheet,
     worksheet.update([["strategy", strategy_name]], "B2:C2")
     worksheet.update([["init_capital", init_capital]], "B3:C3")
     worksheet.update([["curret_capital", init_capital]], "B4:C4")
-    worksheet.update([["running_capital", 0]], "B5:C5")
-    worksheet.update([["tmux_session_name", tmux_session_name]], "B6:C6")
-    worksheet.update([["sheet_created(UTC+0)", datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")]], "B7:C7")
+    worksheet.update([["collateral_long", 0]], "B5:C5")
+    worksheet.update([["collateral_short", 0]], "B6:C6")
+    worksheet.update([["tmux_session_name", tmux_session_name]], "B7:C7")
+    worksheet.update([["sheet_created(UTC+0)", datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")]], "B8:C8")
 
     # Transaction history
     header_list = []
-    header_list.append("Timestamp")
-
-    # header_list.extend([symbol+"_fetched_price" for symbol in traded_assets])   # Price fetched right before executing the order through the API
-    # header_list.extend([symbol+"_position" for symbol in traded_assets])
-    # header_list.extend([symbol+"_entry_price" for symbol in traded_assets])  # Price finalized after the order is executed
-    # header_list.extend([symbol+"_amount" for symbol in traded_assets])
-    # header_list.extend([symbol+"_quantity" for symbol in traded_assets])
+    header_list.append("Timestamp(UTC+0)")
 
     for symbol in traded_assets:
         header_list.extend([
@@ -77,7 +72,7 @@ def setup_worksheet_format(worksheet,
         ])
 
     header_list.extend([
-        "open_close", "running_capital", "capital"
+        "open_close", "collateral_long", "collateral_short", "capital"
     ])
 
     start_col = 2
