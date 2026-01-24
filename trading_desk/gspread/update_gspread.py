@@ -9,7 +9,7 @@ def num_to_col(num):
 
 def add_transaction_log(worksheet,
                         positions_holding,
-                        open_close:bool,
+                        open_close:str,
                         running_capital:float,
                         capital:float): # List elements are not type-casted
     
