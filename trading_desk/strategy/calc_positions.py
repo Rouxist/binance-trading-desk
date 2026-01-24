@@ -24,7 +24,7 @@ class PositionCalculator:
         if self.strategy_name == "momentum1":
             if len(data) != 13:
                 raise ValueError(
-                    f"DataFrame must have exactly 12 rows, got {len(data)}"
+                    f"DataFrame must have exactly 13 rows, got {len(data)}"
                 )
             
             symbols_top, symbols_bottom = strat_momentum1(data=data,
