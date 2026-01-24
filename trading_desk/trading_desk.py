@@ -82,45 +82,81 @@ class TradingDesk:
         Step 1
         : Close existing positions
         """
-        
+        self.logger.info("Step 1 starts.")
+
         if self.positions_holding: # If positions_holding is not empty
-            for position in self.positions_holding:
-                """
-                To-Do: Determine whether the asset exists in the account
-                by non-negativity of quantity, not non-zero position.
-                """
-                if self.is_mock:
-                    pass
-                    # if position.position == 1:
-                    #     res = place_mock_market_sell(symbol=position.symbol)
-                    # elif positions.position == -1:
-                    #     res = place_mock_market_buy(symbol=position.symbol)
-                    # if res == success:
-                    #     self.positions_holding.remove(position)
-                    # else:
-                    #     self.logger.info(f"mock {position.position} order of {position.symbol} was not successfully cleared")
+            cleared_positions = [] # Also includes assets that were not held
+
+            for position in self.positions_holding[:]: # Iterate over a shallow copy
+                if position.quantity > 0 : # If currently holding this asset
+                    if self.is_mock:
+                        fetched_price = self.api_handler.get_current_price(symbol=position.symbol)
+                        
+                        position_for_clearing = -1*position.position
+                        quantity_holding = position.quantity
+                        amount_to_be_cleared = -1*position_for_clearing*fetched_price * quantity_holding
+
+                        amount_clearing_after_fee = amount_to_be_cleared*(1 + position_for_clearing*self.transaction_cost)
+
+                        cleared_position = Position(
+                                            symbol=position.symbol,
+                                            position=position_for_clearing,
+                                            fetched_price=fetched_price,
+                                            entry_price=fetched_price,
+                                            quantity=position.quantity,
+                                            amount=amount_clearing_after_fee
+                                        )
+
+                        self.capital += amount_clearing_after_fee
+                        
+                    else:
+                        pass
+                        # if positions.position == 1:
+                        #     res = place_market_sell(symbol=position.symbol)
+                        # elif positions.position == -1:
+                        #     res = place_market_buy(symbol=position.symbol)
+                        # if res == success:
+                        #     self.positions_holding.append(position)
+                        # else:
+                        #     self.logger.info(f"{position.position} order of {position.symbol} was not successfully cleared")           
+
                 else:
-                    pass
-                    # if positions.position == 1:
-                    #     res = place_market_sell(symbol=position.symbol)
-                    # elif positions.position == -1:
-                    #     res = place_market_buy(symbol=position.symbol)
-                    # if res == success:
-                    #     self.positions_holding.append(position)
-                    # else:
-                    #     self.logger.info(f"{position.position} order of {position.symbol} was not successfully cleared")
+                    cleared_position = Position(
+                                           symbol=position.symbol,
+                                           position=0,
+                                           fetched_price=0,
+                                           entry_price=0,
+                                           quantity=0,
+                                           amount=0
+                                       )
+                
+                cleared_positions.append(cleared_position)
+                self.positions_holding.remove(position)
+     
+            # After 
+
+            add_transaction_log(worksheet=self.g_worksheets_mock,
+                                positions_holding=cleared_positions,
+                                open_close="close",
+                                running_capital=0,
+                                capital=self.capital)
+        
+            if not self.positions_holding: # If self.positions_holding is empty
+                self.logger.info("All positions are cleared")
+
+            self.logger.info(f"After step 1, cleared_positions = {cleared_positions}")
+
         else:
             self.logger.info("No open position. Position clearing has been skipped.")
 
-        """
-        To-Do:
-        - update self.running_capital, self.capital
-        """
+        self.logger.info("Step 1 is finished.")
+
 
         """
         Step 2
         : Position calculation
         """
+        self.logger.info("Step 2 starts.")
 
         # Fetch data and build DataFrame
         close_prices = {}
@@ -138,11 +174,17 @@ class TradingDesk:
                                                            n_asset_buy=self.n_asset_buy,
                                                            n_asset_sell=self.n_asset_sell)
 
+        symbols_to_trade = [p.symbol for p in positions]
+        self.logger.info(f"Symbols to trade: {[f"{p.symbol}:{p.position}" for p in positions]}")
+
+        self.logger.info("Step 2 is finished.")
+
 
         """
         Step 3
         : Open new positions
         """
+        self.logger.info("Step 3 starts.")
 
         # Calculate budget allocation (amount) for each asset
         if self.asset_weight_type=="equal":
@@ -155,10 +197,6 @@ class TradingDesk:
             raise NotImplementedError(f"Asset weight type '{self.asset_weight_type}' is not supported yet")
 
         # Make (mock) order for each asset
-        symbols_to_trade = [p.symbol for p in positions]
-    
-        self.logger.info(f"Symbols to trade: {[f"{p.symbol}:{p.position}" for p in positions]}")
-        
         for symbol in self.traded_assets:
             position = next((p for p in positions if p.symbol == symbol), None)
 
@@ -206,8 +244,7 @@ class TradingDesk:
                     position.entry_price = fetched_price
                     position.amount = order_amount_after_fee
 
-                    self.running_capital += order_amount_after_fee
-                    self.capital -= order_amount_after_fee
+                    self.capital += order_amount_after_fee
 
                 else:
 
@@ -221,13 +258,13 @@ class TradingDesk:
 
             else:
                 position = Position(
-                                symbol=symbol,
-                                position=0,
-                                fetched_price=0,
-                                entry_price=0,
-                                quantity=0,
-                                amount=0
-                            )
+                               symbol=symbol,
+                               position=0,
+                               fetched_price=0,
+                               entry_price=0,
+                               quantity=0,
+                               amount=0
+                           )
 
 
             self.positions_holding.append(position)
@@ -238,7 +275,9 @@ class TradingDesk:
                             running_capital=self.running_capital,
                             capital=self.capital)
         
-        self.logger.info(f"After execution, positions_holding = {self.positions_holding}")
+        self.logger.info(f"After step 3, positions_holding = {self.positions_holding}")
+        
+        self.logger.info("Step 3 is finished.")
 
 
     def run_strategy(self):
