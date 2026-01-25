@@ -144,7 +144,7 @@ class TradingDesk:
             # After 
 
             add_transaction_log(worksheet=self.g_worksheets_mock,
-                                positions_holding=cleared_positions,
+                                positions_to_record=cleared_positions,
                                 open_close="close",
                                 collateral_long=self.collateral_long,
                                 collateral_short=self.collateral_short,
@@ -285,7 +285,7 @@ class TradingDesk:
             self.positions_holding.append(position)
 
         add_transaction_log(worksheet=self.g_worksheets_mock,
-                            positions_holding=self.positions_holding,
+                            positions_to_record=self.positions_holding,
                             open_close="open",
                             collateral_long=self.collateral_long, 
                             collateral_short=self.collateral_short,

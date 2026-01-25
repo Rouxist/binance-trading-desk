@@ -8,7 +8,7 @@ def num_to_col(num):
     return col
 
 def add_transaction_log(worksheet,
-                        positions_holding,
+                        positions_to_record,
                         open_close:str,
                         collateral_long:float, 
                         collateral_short:float,
@@ -22,7 +22,7 @@ def add_transaction_log(worksheet,
     row_element_list.append(timestamp_now)
 
     ## Add transaction logs
-    for position in positions_holding:
+    for position in positions_to_record:
         row_element_list.extend([
             position.fetched_price,
             position.position,
