@@ -24,10 +24,30 @@ class APIHandler:
               headers: Optional[dict]=None,
               params: Optional[dict]=None,
               data: Optional[dict]=None,
+              signed: bool=False,
               timeout: int = 10):
 
         url = self.base_url + endpoint
-        
+
+        params = params.copy() if params else {}
+        headers = headers.copy() if headers else {}
+
+        if signed:
+            params.setdefault(
+                "timestamp",
+                int(datetime.datetime.now(datetime.timezone.utc).timestamp() * 1000)
+            )
+
+            query_string = urlencode(params)
+            signature = hmac.new(
+                self.binance_secret_key.encode("utf-8"),
+                query_string.encode("utf-8"),
+                hashlib.sha256
+            ).hexdigest()
+
+            params["signature"] = signature
+            headers["X-MBX-APIKEY"] = self.binance_api_key
+            
         try:
             response = self.session.request(method=method.upper(),
                                             url=url,
@@ -193,29 +213,10 @@ class APIHandler:
     # Account-related endpoints
     def get_balance(self,
                     symbol:str):
-
-        params = {
-            "timestamp": int(datetime.datetime.now(datetime.timezone.utc).timestamp() * 1000)
-        }
-
-        query_string = urlencode(params)
-
-        signature = hmac.new(
-            self.binance_secret_key.encode("utf-8"),
-            query_string.encode("utf-8"),
-            hashlib.sha256
-        ).hexdigest()
-
-        params["signature"] = signature
-
-        headers = {
-            "X-MBX-APIKEY": self.binance_api_key
-        }
     
         response = self.fetch(endpoint="/fapi/v2/balance",
                               method="GET",
-                              headers=headers,
-                              params=params)
+                              signed=True)
 
         res = next((bal for bal in response if bal["asset"] == symbol), None)
         
