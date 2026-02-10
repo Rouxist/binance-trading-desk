@@ -221,3 +221,43 @@ class APIHandler:
         res = next((bal for bal in response if bal["asset"] == symbol), None)
         
         return res
+
+
+    def set_leverage(self,
+                     symbol:str,
+                     leverage:int=1):
+        
+        params = {
+            'symbol': symbol,
+            'leverage': leverage
+        }
+
+        response = self.fetch(endpoint="/fapi/v1/leverage",
+                              method="POST",
+                              params=params,
+                              signed=True)
+        
+        """
+        Example return foramt:
+
+        {'symbol': 'BTCUSDT', 'leverage': 1, 'maxNotionalValue': '1800000000'}
+        """
+        return response
+
+
+    def fetch_position(self,
+                        symbol:str):
+        """
+        Fetches information about currently open positions.
+        """
+        
+        params = {
+            'symbol': symbol
+        }
+
+        response = self.fetch(endpoint="/fapi/v3/positionRisk",
+                              method="GET",
+                              params=params,
+                              signed=True)
+        
+        return response
