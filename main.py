@@ -29,8 +29,16 @@ if __name__ == "__main__":
     scheduler = BlockingScheduler()
 
     if config.strategyconfig.unit == "m":
-        scheduler.add_job(trading_desk.run_strategy, "cron", minute=f"*/{config.strategyconfig.every}")
+        scheduler.add_job(trading_desk.run_strategy, 
+                          "cron", 
+                          minute=f"*/{config.strategyconfig.every}",
+                          kwargs={"scheduler": scheduler})
+
     elif config.strategyconfig.unit == "h":
-        scheduler.add_job(trading_desk.run_strategy, "cron", hour=f"*/{config.strategyconfig.every}", minute=0)
+        scheduler.add_job(trading_desk.run_strategy, 
+                          "cron", 
+                          hour=f"*/{config.strategyconfig.every}",
+                          minute=0,
+                          kwargs={"scheduler": scheduler})
 
     scheduler.start()

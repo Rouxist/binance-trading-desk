@@ -101,6 +101,42 @@ class APIHandler:
 
         now = datetime.datetime.now(datetime.timezone.utc)
 
+        """
+        `'startTime`, `endTime` argument determination example
+        - interval="1m"
+        - Fetch 13 latest closing prices
+        
+        If the "/fapi/v1/klines" is called at 10:46:10, then
+        - start_time = 2026-02-10 10:33:00+00:00
+        - end_time   = 2026-02-10 10:46:00+00:00
+
+        Then fetched result includes total 14 rows (after arranged into pandas.DataFrame):
+                                   BTCUSDT  ETHUSDT  XRPUSDT  LTCUSDT  TONUSDT
+        open_time                                                             
+        2026-02-10 10:33:00+00:00  69025.0  2014.30   1.4197    53.33   1.3469
+        2026-02-10 10:34:00+00:00  69020.1  2013.85   1.4186    53.31   1.3467
+        2026-02-10 10:35:00+00:00  68988.8  2013.47   1.4172    53.27   1.3478
+        2026-02-10 10:36:00+00:00  69009.7  2014.24   1.4174    53.27   1.3480
+        2026-02-10 10:37:00+00:00  68986.6  2013.42   1.4166    53.24   1.3478
+        2026-02-10 10:38:00+00:00  68951.5  2012.04   1.4159    53.24   1.3471
+        2026-02-10 10:39:00+00:00  68944.3  2012.26   1.4164    53.24   1.3477
+        2026-02-10 10:40:00+00:00  68970.2  2013.60   1.4174    53.27   1.3478
+        2026-02-10 10:41:00+00:00  68969.9  2013.69   1.4172    53.24   1.3480
+        2026-02-10 10:42:00+00:00  68974.2  2013.97   1.4166    53.24   1.3474
+        2026-02-10 10:43:00+00:00  68987.1  2014.53   1.4169    53.25   1.3479
+        2026-02-10 10:44:00+00:00  68964.3  2013.71   1.4165    53.21   1.3468
+        2026-02-10 10:45:00+00:00  69012.8  2015.26   1.4170    53.24   1.3474
+        2026-02-10 10:46:00+00:00  69005.3  2014.94   1.4163    53.24   1.3473
+
+        Each timestamp represents the open time of the kline.
+        For example, if the timestamp is '10:44:00+00:00', 
+        the open price corresponds approximately to the price at 10:44:00, 
+        and close price corresponds approximately to the price at 10:44:59.
+
+        Therfore, the last row (with timestamp 2026-02-10 10:46:00+00:00) represents
+        an incomplete whose closing price has not yet been determined.
+        The last row is removed before position calculation.
+        """
         if unit=="h":
             # Calc end_time, start_time
             floored = now.replace(minute=0, second=0, microsecond=0)

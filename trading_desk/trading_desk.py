@@ -1,3 +1,4 @@
+import time
 import math
 from .data_models import MainConfig
 from .setup_logger import setup_logger, log_configs
@@ -165,6 +166,7 @@ class TradingDesk:
         Step 2
         : Position calculation
         """
+        time.sleep(10) # delay to prevent fetching incomplete kline
         self.logger.info("Step 2 starts.")
 
         # Fetch data and build DataFrame
@@ -178,6 +180,7 @@ class TradingDesk:
             close_prices[symbol] = build_closing_price_series(klines)
 
         df = build_dataframe(close_prices)
+        df = df.iloc[:-1] # Exclude very last row which is incomplete kline
         
         positions = self.position_calculator.get_positions(data=df,
                                                            n_asset_buy=self.n_asset_buy,
@@ -296,5 +299,17 @@ class TradingDesk:
         self.logger.info("Step 3 is finished.")
 
 
-    def run_strategy(self):
-        self.strategy_func()
+    def run_strategy(self,
+                     scheduler):
+
+        try:
+            self.strategy_func()
+
+        except Exception as e:
+            self.logger.exception("Error occurred")
+
+            if hasattr(e, "wrong_dataframe"):
+                self.logger.error("Wrong dataframe:\n%s",
+                                  e.wrong_dataframe.to_string())
+
+            scheduler.shutdown(wait=False)
