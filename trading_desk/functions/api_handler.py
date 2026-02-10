@@ -1,13 +1,20 @@
 import datetime
+import hashlib
+import hmac
 from requests import Session, exceptions
 from requests.exceptions import Timeout, HTTPError, RequestException
+from urllib.parse import urlencode
 import time
 from typing import Optional
 
 class APIHandler:
-    def __init__(self):
+    def __init__(self,
+                 binance_api_key:str,
+                 binance_secret_key:str):
         self.base_url = "https://fapi.binance.com"
         self.session = Session()
+        self.binance_api_key = binance_api_key
+        self.binance_secret_key = binance_secret_key
 
 
     def fetch(self,
@@ -47,6 +54,7 @@ class APIHandler:
             return json_response
 
 
+    # Market data endpoints
     def get_server_time(self,
                         is_unix:bool=True):
 
@@ -68,6 +76,7 @@ class APIHandler:
 
     def get_premium_index(self,
                           symbol:str):
+
         params = {
             "symbol": symbol
         }
@@ -179,3 +188,35 @@ class APIHandler:
                               params=params)
         
         return response
+
+
+    # Account-related endpoints
+    def get_balance(self,
+                    symbol:str):
+
+        params = {
+            "timestamp": int(datetime.datetime.now(datetime.timezone.utc).timestamp() * 1000)
+        }
+
+        query_string = urlencode(params)
+
+        signature = hmac.new(
+            self.binance_secret_key.encode("utf-8"),
+            query_string.encode("utf-8"),
+            hashlib.sha256
+        ).hexdigest()
+
+        params["signature"] = signature
+
+        headers = {
+            "X-MBX-APIKEY": self.binance_api_key
+        }
+    
+        response = self.fetch(endpoint="/fapi/v2/balance",
+                              method="GET",
+                              headers=headers,
+                              params=params)
+
+        res = next((bal for bal in response if bal["asset"] == symbol), None)
+        
+        return res

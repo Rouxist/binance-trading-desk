@@ -49,7 +49,8 @@ class TradingDesk:
         self.positions_holding: List[Position] = []
 
         # Objects
-        self.api_handler = APIHandler()
+        self.api_handler = APIHandler(binance_api_key=self.binance_api_key
+                                      binance_secret_key=self.binance_secret_key)
         self.position_calculator = PositionCalculator(strategy_name=self.strategy_name)
 
         # Initialization
