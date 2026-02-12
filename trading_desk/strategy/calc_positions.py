@@ -29,7 +29,7 @@ class PositionCalculator:
                 err.wrong_dataframe = data
 
                 raise err
-)
+
             symbols_top, symbols_bottom = strat_momentum1(data=data,
                                                           n_asset_buy=n_asset_buy,
                                                           n_asset_sell=n_asset_sell)
