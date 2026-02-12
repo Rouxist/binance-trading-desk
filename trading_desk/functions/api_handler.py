@@ -246,9 +246,9 @@ class APIHandler:
 
 
     def fetch_position(self,
-                        symbol:str):
+                       symbol:str):
         """
-        Fetches information about currently open positions.
+        Fetch information about currently open positions.
         """
         
         params = {
@@ -257,6 +257,31 @@ class APIHandler:
 
         response = self.fetch(endpoint="/fapi/v3/positionRisk",
                               method="GET",
+                              params=params,
+                              signed=True)
+        
+        return response
+    
+
+    # Order-related endpoints
+    def place_market_order(self,
+                           symbol:str,
+                           side:str,
+                           quantity:float):
+        """
+        Place Buy/Sell market order.
+        """
+
+        params = {
+            "symbol": symbol,
+            "side": side,
+            "type": "MARKET",
+            "quantity": quantity,
+            "newOrderRespType": "RESULT"
+        }
+
+        response = self.fetch(endpoint="/fapi/v1/order",
+                              method="POST",
                               params=params,
                               signed=True)
         
