@@ -73,6 +73,13 @@ class TradingDesk:
                                init_capital=self.init_capital,
                                traded_assets=self.traded_assets,
                                tmux_session_name=self.tmux_session_name)
+        
+        ## Set leverage
+        if not self.is_mock:
+            for symbol in self.traded_assets:
+                res = self.api_handler.set_leverage(symbol=symbol,
+                                                    leverage=1)
+                self.logger.info(f"Leverage for {symbol} set to {res["leverage"]}")
 
 
     def strategy_func(self):
