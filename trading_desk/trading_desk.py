@@ -65,18 +65,14 @@ class TradingDesk:
         self.logger.info(f"Binance SECRET key = {self.binance_secret_key}")
         log_configs(logger=self.logger, config=config)
 
-        ## Account initialization
-        if self.is_mock:
-            self.g_worksheets_mock = init_gspread(session_name=self.session_name)
+        ## Gspread initialization
+        self.g_worksheets_mock = init_gspread(session_name=self.session_name)
 
-            setup_worksheet_format(worksheet=self.g_worksheets_mock,
-                                   strategy_name=self.strategy_name, 
-                                   init_capital=self.init_capital,
-                                   traded_assets=self.traded_assets,
-                                   tmux_session_name=self.tmux_session_name)
-        else:
-            # Clear positions in binance account
-            pass
+        setup_worksheet_format(worksheet=self.g_worksheets_mock,
+                               strategy_name=self.strategy_name, 
+                               init_capital=self.init_capital,
+                               traded_assets=self.traded_assets,
+                               tmux_session_name=self.tmux_session_name)
 
 
     def strategy_func(self):
@@ -266,14 +262,37 @@ class TradingDesk:
                     self.capital += order_amount_after_fee
 
                 else:
+                    # Determine side
+                    if position.position == 1:
+                        side = "BUY"
+                    elif position.position == -1:
+                        side = "SELL"
 
-                    pass
-                    """
-                    To-Do:
-                    - make order via the "/fapi/v1/order" endpoint
-                    - if successful, update `position` using actual executed price and quantity
-                    - update self.running_capital and self.capital
-                    """
+                    # Place order
+                    res = self.api_handler.place_market_order(symbol=position.symbol,
+                                                              side=side, 
+                                                              quantity=quantity_rounded_down)
+                    
+                    if res["status"] != "FILLED":
+                        err = RuntimeError(
+                            f"Order not filled: status={res["status"]}"
+                        )
+
+                        raise err
+                    
+                    # Update position information based on the response
+                    position.quantity = float(res["executedQty"]) # negative if short position
+                    position.entry_price = float(res["avgPrice"])
+                    order_amount_after_fee = float(res["cumQuote"])*(1 + position.position*self.transaction_cost)  # `Fee deducted`
+                    position.amount = order_amount_after_fee
+
+                    # Update balance status
+                    if position.position==1:
+                        self.collateral_long += abs(order_amount_after_fee)
+                    if position.position==-1:
+                        self.collateral_short += abs(order_amount_after_fee)
+
+                    self.capital += order_amount_after_fee
 
             else:
                 position = Position(
