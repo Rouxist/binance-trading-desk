@@ -82,6 +82,24 @@ class TradingDesk:
                 self.logger.info(f"Leverage for {symbol} set to {res["leverage"]}")
 
 
+    def close_position(self, 
+                       symbol:str):
+        open_position = self.api_handler.fetch_position(symbol=symbol)
+        quantity = float(open_position[0]["positionAmt"])
+        quantity_to_clear = abs(quantity)
+
+        if quantity > 0: # Position is open on the long side
+            side="SELL"
+        if quantity < 0: # Position is open on the short side
+            side="BUY"
+
+        res = self.api_handler.place_market_order(symbol=symbol,
+                                                  side=side, 
+                                                  quantity=quantity_to_clear)
+
+        return res
+
+
     def strategy_func(self):
         self.logger.info("strategy_func is executed")
 
@@ -95,11 +113,12 @@ class TradingDesk:
             cleared_positions = [] # Also includes assets that were not held
 
             for position in self.positions_holding[:]: # Iterate over a shallow copy
-                if position.quantity > 0 : # If currently holding this asset
+                if position.quantity != 0 : # If currently holding this asset
+                    position_for_clearing = -1*position.position
+                    fetched_price = self.api_handler.get_current_price(symbol=position.symbol)
+
                     if self.is_mock:
-                        fetched_price = self.api_handler.get_current_price(symbol=position.symbol)
                         
-                        position_for_clearing = -1*position.position
                         quantity_holding = position.quantity
                         amount_to_be_cleared = -1*position_for_clearing*fetched_price * quantity_holding
 
@@ -114,24 +133,28 @@ class TradingDesk:
                                             amount=amount_clearing_after_fee
                                         )
 
-                        # Update balance status
-                        if position.position==1:
-                            self.collateral_long -= abs(position.amount)
-                        if position.position==-1:
-                            self.collateral_short -= abs(position.amount)
-
-                        self.capital += amount_clearing_after_fee
                         
                     else:
-                        pass
-                        # if positions.position == 1:
-                        #     res = place_market_sell(symbol=position.symbol)
-                        # elif positions.position == -1:
-                        #     res = place_market_buy(symbol=position.symbol)
-                        # if res == success:
-                        #     self.positions_holding.append(position)
-                        # else:
-                        #     self.logger.info(f"{position.position} order of {position.symbol} was not successfully cleared")           
+                        res = self.close_position(symbol=position.symbol)
+
+                        amount_clearing_after_fee = float(res["cumQuote"])*(1 + position_for_clearing*self.transaction_cost)  # `Fee deducted`
+
+                        cleared_position = Position(
+                                            symbol=position.symbol,
+                                            position=position_for_clearing,
+                                            fetched_price=fetched_price,
+                                            entry_price=float(res["avgPrice"]),
+                                            quantity=float(res["executedQty"]),
+                                            amount=amount_clearing_after_fee
+                                        )
+
+                    # Update balance status
+                    if position.position==1:
+                        self.collateral_long -= abs(position.amount)
+                    if position.position==-1:
+                        self.collateral_short -= abs(position.amount)
+
+                    self.capital += amount_clearing_after_fee
 
                 else:
                     cleared_position = Position(
