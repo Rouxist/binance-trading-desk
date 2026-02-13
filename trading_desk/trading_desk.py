@@ -313,7 +313,7 @@ class TradingDesk:
                     # Update position information based on the response
                     position.quantity = float(res["executedQty"]) # negative if short position
                     position.entry_price = float(res["avgPrice"])
-                    order_amount_after_fee = float(res["cumQuote"])*(1 + position.position*self.transaction_cost)  # `Fee deducted`
+                    order_amount_after_fee = -1*position.position*float(res["cumQuote"])*(1 + position.position*self.transaction_cost)  # `Fee deducted`
                     position.amount = order_amount_after_fee
 
                     # Update balance status
