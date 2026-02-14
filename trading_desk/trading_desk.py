@@ -74,7 +74,7 @@ class TradingDesk:
 
         setup_worksheet_format(worksheet=self.g_worksheets_mock,
                                strategy_name=self.strategy_name, 
-                               init_capital=self.init_capital,
+                               init_capital=self.capital,
                                traded_assets=self.traded_assets,
                                tmux_session_name=self.tmux_session_name)
         
