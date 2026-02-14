@@ -52,7 +52,7 @@ def setup_worksheet_format(worksheet,
     # Session info
     worksheet.update([["strategy", strategy_name]], "B2:C2")
     worksheet.update([["init_capital", init_capital]], "B3:C3")
-    worksheet.update([["curret_capital", init_capital]], "B4:C4")
+    worksheet.update([["current_capital", init_capital]], "B4:C4")
     worksheet.update([["collateral_long", 0]], "B5:C5")
     worksheet.update([["collateral_short", 0]], "B6:C6")
     worksheet.update([["tmux_session_name", tmux_session_name]], "B7:C7")
