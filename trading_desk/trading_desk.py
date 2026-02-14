@@ -41,17 +41,21 @@ class TradingDesk:
         # Exchange hyperparameters
         self.transaction_cost = 0.0005
 
-        # Attributes
-        self.capital = config.init_capital
-        self.running_capital = 0
-        self.collateral_long = 0
-        self.collateral_short = 0
-        self.positions_holding: List[Position] = []
-
         # Objects
         self.api_handler = APIHandler(binance_api_key=self.binance_api_key,
                                       binance_secret_key=self.binance_secret_key)
         self.position_calculator = PositionCalculator(strategy_name=self.strategy_name)
+
+        # Attributes
+        if self.is_mock:
+            self.capital = config.init_capital
+        else:
+            balance_info = self.api_handler.get_balance(symbol="USDT")
+            self.capital = float(balance_info["availableBalance"])
+
+        self.collateral_long = 0
+        self.collateral_short = 0
+        self.positions_holding: List[Position] = []
 
         # Initialization
         ## Logger
@@ -226,8 +230,11 @@ class TradingDesk:
         self.logger.info("Step 3 starts.")
 
         # Calculate budget allocation (amount) for each asset
+        balance_info = self.api_handler.get_balance(symbol="USDT")
+        available_balance = float(balance_info["availableBalance"])
+
         if self.asset_weight_type=="equal":
-            amount = self.capital / (self.n_asset_buy+self.n_asset_sell)
+            amount = available_balance / (self.n_asset_buy+self.n_asset_sell)
 
             for position in positions:
                 position.amount = amount
@@ -322,7 +329,9 @@ class TradingDesk:
                     if position.position==-1:
                         self.collateral_short += abs(order_amount_after_fee)
 
-                    self.capital += order_amount_after_fee
+                    balance_info = self.api_handler.get_balance(symbol="USDT")
+                    self.capital = float(balance_info["availableBalance"])
+                    
 
             else:
                 position = Position(
@@ -344,7 +353,7 @@ class TradingDesk:
                             collateral_short=self.collateral_short,
                             capital=self.capital)
         
-        self.logger.info(f"After step 3, positions_holding = {self.positions_holding}")
+        self.logger.info(f"positions_holding = {self.positions_holding}")
         
         self.logger.info("Step 3 is finished.")
 
