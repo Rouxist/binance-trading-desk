@@ -2,10 +2,11 @@ import time
 import math
 from .data_models import MainConfig
 from .setup_logger import setup_logger, log_configs
-from .gspread import init_gspread, setup_worksheet_format, add_transaction_log
+from .gspread import init_gspread, setup_worksheet_format, add_transaction_log, get_cell_value
 from .strategy import PositionCalculator
 from .strategy.position_model import Position
 from .functions import APIHandler, build_closing_price_series, build_dataframe, get_quantity_precision, get_min_order_quantity
+from .errors import TradingTermination
 
 __all__ = ["TradingDesk"]
 
@@ -84,6 +85,13 @@ class TradingDesk:
                 res = self.api_handler.set_leverage(symbol=symbol,
                                                     leverage=1)
                 self.logger.info(f"Leverage for {symbol} set to {res["leverage"]}")
+
+
+    def check_is_running(self):
+        res = get_cell_value(worksheet=self.g_worksheets_mock,
+                             cell="C9")
+
+        return res
 
 
     def close_position(self, 
@@ -191,6 +199,11 @@ class TradingDesk:
             self.logger.info("No open position. Position clearing has been skipped.")
 
         self.logger.info("Step 1 is finished.")
+
+        is_active = int(self.check_is_running())
+
+        if not is_active: # if is_acive==0
+            raise TradingTermination(f"Termination requested. Shutting down...")
 
 
         """

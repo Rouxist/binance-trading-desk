@@ -57,6 +57,7 @@ def setup_worksheet_format(worksheet,
     worksheet.update([["collateral_short", 0]], "B6:C6")
     worksheet.update([["tmux_session_name", tmux_session_name]], "B7:C7")
     worksheet.update([["sheet_created(UTC+0)", datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")]], "B8:C8")
+    worksheet.update([["is_running", 1]], "B9:C9")
 
     # Transaction history
     header_list = []
