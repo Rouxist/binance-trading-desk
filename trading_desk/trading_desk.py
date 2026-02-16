@@ -39,6 +39,9 @@ class TradingDesk:
         self.n_asset_sell = config.strategyconfig.n_asset_sell
         self.asset_weight_type = config.strategyconfig.asset_weight_type
 
+        # Termination flags
+        # self.must_terminate = False
+
         # Exchange hyperparameters
         self.transaction_cost = 0.0005
 
@@ -200,10 +203,12 @@ class TradingDesk:
 
         self.logger.info("Step 1 is finished.")
 
-        is_active = int(self.check_is_running())
+        is_active = bool(int(self.check_is_running()))
 
-        if not is_active: # if is_acive==0
-            raise TradingTermination(f"Termination requested. Shutting down...")
+        if not is_active:
+            raise TradingTermination(f"Termination is requested by user. Shutting down without additional order.")
+        # if self.must_terminate:
+        #     raise TradingTermination(f"Problem occurred. Shutting down...")
 
 
         """
@@ -383,5 +388,13 @@ class TradingDesk:
             if hasattr(e, "wrong_dataframe"):
                 self.logger.error("Wrong dataframe:\n%s",
                                   e.wrong_dataframe.to_string())
+            
+            # Clear remaining positions before shutting eveyything down, if it is not mock trading session
+            if self.positions_holding: # If positions_holding is not empty
+                if not self.is_mock:
+                    for position in self.positions_holding[:]: # Iterate over a shallow copy
+                        res = self.close_position(symbol=position.symbol)
+            else:
+                self.logger.info("No open position. Session terminates immediately.")
 
             scheduler.shutdown(wait=False)
