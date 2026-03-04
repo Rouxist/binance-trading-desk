@@ -237,6 +237,8 @@ class TradingDesk:
 
         symbols_to_trade = [p.symbol for p in positions]
         self.logger.info(f"Symbols to trade: {[f"{p.symbol}:{p.position}" for p in positions]}")
+        
+        n_active = sum([abs(p.position) for p in positions])
 
         self.logger.info("Step 2 is finished.")
 
@@ -252,7 +254,8 @@ class TradingDesk:
         available_balance = float(balance_info["availableBalance"])
 
         if self.asset_weight_type=="equal":
-            amount = available_balance / (self.n_asset_buy+self.n_asset_sell)
+            amount = available_balance / n_active
+            self.logger.info(f"Allocation for each asset: {amount} USDT")
 
             for position in positions:
                 position.amount = amount
