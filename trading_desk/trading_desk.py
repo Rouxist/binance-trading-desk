@@ -250,8 +250,11 @@ class TradingDesk:
         self.logger.info("Step 3 starts.")
 
         # Calculate budget allocation (amount) for each asset
-        balance_info = self.api_handler.get_balance(symbol="USDT")
-        available_balance = float(balance_info["availableBalance"])
+        if self.is_mock:
+            available_balance = self.capital
+        else:
+            balance_info = self.api_handler.get_balance(symbol="USDT")
+            available_balance = float(balance_info["availableBalance"])
 
         if self.asset_weight_type=="equal":
             amount = available_balance / n_active
