@@ -128,7 +128,7 @@ class TradingDesk:
             cleared_positions = [] # Also includes assets that were not held
 
             for position in self.positions_holding[:]: # Iterate over a shallow copy
-                if position.quantity != 0 : # If currently holding this asset
+                if position.quantity > 0: # If currently holding this asset
                     position_for_clearing = -1*position.position
                     fetched_price = self.api_handler.get_current_price(symbol=position.symbol)
 
