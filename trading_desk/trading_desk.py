@@ -116,7 +116,7 @@ class TradingDesk:
 
 
     def strategy_func(self):
-        self.logger.info("strategy_func is executed")
+        self.logger.info("========================= strategy_func starts to execute =========================")
 
         """
         Step 1
@@ -196,12 +196,12 @@ class TradingDesk:
             if not self.positions_holding: # If self.positions_holding is empty
                 self.logger.info("All positions are cleared")
 
-            self.logger.info(f"After step 1, cleared_positions = {cleared_positions}")
+            # self.logger.info(f"After step 1, cleared_positions = {cleared_positions}")
 
         else:
             self.logger.info("No open position. Position clearing has been skipped.")
 
-        self.logger.info("Step 1 is finished.")
+        self.logger.info("Step 1 is finished.\n")
 
         is_active = bool(int(self.check_is_running()))
 
@@ -240,7 +240,7 @@ class TradingDesk:
         
         n_active = sum([abs(p.position) for p in positions])
 
-        self.logger.info("Step 2 is finished.")
+        self.logger.info("Step 2 is finished.\n")
 
 
         """
@@ -373,6 +373,8 @@ class TradingDesk:
 
             self.positions_holding.append(position)
 
+        self.logger.info("All positions are successfully opened.")
+
         add_transaction_log(worksheet=self.g_worksheets_mock,
                             positions_to_record=self.positions_holding,
                             open_close="open",
@@ -380,10 +382,11 @@ class TradingDesk:
                             collateral_short=self.collateral_short,
                             capital=self.capital)
         
-        self.logger.info(f"positions_holding = {self.positions_holding}")
+        # self.logger.info(f"positions_holding = {self.positions_holding}")
         
         self.logger.info("Step 3 is finished.")
-
+        self.logger.info("===================================================================================")
+        self.logger.info("\n\n")
 
     def run_strategy(self,
                      scheduler):
