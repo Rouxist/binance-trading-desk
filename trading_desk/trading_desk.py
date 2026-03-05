@@ -281,6 +281,9 @@ class TradingDesk:
                 quantity = position.amount/fetched_price # Order quantity is calculated using last-traded-price fetched from '/fapi/v1/ticker/price'.
                 quantity_rounded_down = math.floor(quantity*factor)/factor # round down at quantity precision decimal points
 
+                quantity_rounded_down *= 0.95 # intentionally reduce order quantity to add a safety buffer
+                                              # to avoid error {"code":-2019,"msg":"Margin is insufficient."}
+
                 min_order_quantity = get_min_order_quantity(api_handler=self.api_handler,
                                                             symbol=symbol)
 
