@@ -33,9 +33,15 @@ class APIHandler:
         headers = headers.copy() if headers else {}
 
         if signed:
+
+            # To prevent recvWindow error that once occurred from '/fapi/v3/positionRisk': 
+            # {"code":-1021,"msg":"Timestamp for this request is outside of the recvWindow."}
+            server_time= self.get_server_time(is_unix=True)
+            offset = server_time - int(datetime.datetime.now(datetime.timezone.utc).timestamp() * 1000)
+
             params.setdefault(
                 "timestamp",
-                int(datetime.datetime.now(datetime.timezone.utc).timestamp() * 1000)
+                int(datetime.datetime.now(datetime.timezone.utc).timestamp() * 1000) + offset
             )
 
             query_string = urlencode(params)
