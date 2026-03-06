@@ -387,7 +387,8 @@ class TradingDesk:
         
         self.logger.info("Step 3 is finished.")
         self.logger.info("===================================================================================")
-        self.logger.info("\n\n")
+        self.logger.info("")
+        self.logger.info("")
 
     def run_strategy(self,
                      scheduler):
