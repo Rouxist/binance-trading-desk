@@ -92,7 +92,8 @@ class TradingDesk:
 
     def check_is_running(self):
         res = get_cell_value(worksheet=self.g_worksheets_mock,
-                             cell="C9")
+                             cell="C9",
+                             logger=self.logger)
 
         return res
 
@@ -191,7 +192,8 @@ class TradingDesk:
                                 open_close="close",
                                 collateral_long=self.collateral_long,
                                 collateral_short=self.collateral_short,
-                                capital=self.capital)
+                                capital=self.capital,
+                                logger=self.logger)
         
             if not self.positions_holding: # If self.positions_holding is empty
                 self.logger.info("All positions are cleared")
@@ -381,7 +383,8 @@ class TradingDesk:
                             open_close="open",
                             collateral_long=self.collateral_long, 
                             collateral_short=self.collateral_short,
-                            capital=self.capital)
+                            capital=self.capital,
+                            logger=self.logger)
         
         # self.logger.info(f"positions_holding = {self.positions_holding}")
         
