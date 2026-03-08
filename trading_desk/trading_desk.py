@@ -201,7 +201,7 @@ class TradingDesk:
         else:
             self.logger.info("No open position. Position clearing has been skipped.")
 
-        self.logger.info("Step 1 is finished.\n")
+        self.logger.info("Step 1 is finished.")
         self.logger.info("")
 
         is_active = bool(int(self.check_is_running()))
