@@ -1,10 +1,10 @@
 import pandas as pd
 from .position_model import Position
-from .strat_momentum import strat_momentum1, strat_momentum2
+from .strat_momentum import strat_momentum1, strat_momentum2, strat_momentum3
 
 class PositionCalculator:
     def __init__(self, strategy_name):
-        self.supported_strategy_list = ["momentum1", "momentum2"]
+        self.supported_strategy_list = ["momentum1", "momentum2", "momentum3"]
 
         if strategy_name not in self.supported_strategy_list:
             raise Exception("Strategy name is not valid")
@@ -62,7 +62,7 @@ class PositionCalculator:
 
 
         """
-        Sign constraint is applied to signal computation.
+        momentum2: Sign constraint is applied to signal computation.
         """
         if self.strategy_name == "momentum2":
             if len(data) != 13:
@@ -74,6 +74,49 @@ class PositionCalculator:
                 raise err
 
             symbols_long, symbols_short = strat_momentum2(data=data,
+                                                          n_asset_buy=n_asset_buy,
+                                                          n_asset_sell=n_asset_sell)
+
+            positions: List[Position] = []
+
+            for symbol_top in symbols_long:
+                pos = Position(
+                                symbol=symbol_top,
+                                position=1,
+                                fetched_price=None,
+                                entry_price=None,
+                                quantity=None,
+                                amount=None
+                            )
+                positions.append(pos)
+            
+            for symbol_bottom in symbols_short:
+                pos = Position(
+                                symbol=symbol_bottom,
+                                position=-1,
+                                fetched_price=None,
+                                entry_price=None,
+                                quantity=None,
+                                amount=None
+                            )
+                positions.append(pos)
+
+            return positions
+
+
+        """
+        momentum3: Mean reversion is mixed.
+        """
+        if self.strategy_name == "momentum3":
+            if len(data) != 21:
+                err = ValueError(
+                    f"DataFrame must have exactly 21 rows, got {len(data)}"
+                )
+                err.wrong_dataframe = data
+
+                raise err
+
+            symbols_long, symbols_short = strat_momentum3(data=data,
                                                           n_asset_buy=n_asset_buy,
                                                           n_asset_sell=n_asset_sell)
 
