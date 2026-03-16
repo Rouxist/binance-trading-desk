@@ -262,7 +262,7 @@ class TradingDesk:
 
         if self.asset_weight_type=="equal":
             amount = available_balance / n_active
-            self.logger.info(f"Allocation for each asset: {amount} USDT")
+            self.logger.info(f"Allocation for each asset: {round(amount*0.95,2)} USDT")
 
             for position in positions:
                 position.amount = amount
