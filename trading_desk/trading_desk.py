@@ -117,19 +117,21 @@ class TradingDesk:
 
 
     def strategy_func(self):
-        self.logger.info("========================= strategy_func starts to execute =========================")
-
         """
         Step 1
         : Close existing positions
         """
+        self.logger.info("===================================================================================")
+        self.logger.info("")
+        self.logger.info("")
+        self.logger.info("========================= strategy_func starts to execute =========================")
         self.logger.info("Step 1 starts.")
 
         if self.positions_holding: # If positions_holding is not empty
             cleared_positions = [] # Also includes assets that were not held
 
             for position in self.positions_holding[:]: # Iterate over a shallow copy
-                if position.quantity > 0: # If currently holding this asset
+                if position.quantity != 0: # If currently holding this asset
                     position_for_clearing = -1*position.position
                     fetched_price = self.api_handler.get_current_price(symbol=position.symbol)
 
@@ -152,6 +154,11 @@ class TradingDesk:
                         
                     else:
                         res = self.close_position(symbol=position.symbol)
+
+                        # Logging
+                        price_entry = position.entry_price
+                        price_clear = float(res["avgPrice"])
+                        self.logger.info(f"Cleared position of {position.symbol}. Return: {(price_clear/price_entry-1)*100:.2f}%.")
 
                         amount_clearing_after_fee = float(res["cumQuote"])*(1 + position_for_clearing*self.transaction_cost)  # `Fee deducted`
 
@@ -186,7 +193,7 @@ class TradingDesk:
                 self.positions_holding.remove(position)
      
             # After 
-
+            """
             add_transaction_log(worksheet=self.g_worksheets_mock,
                                 positions_to_record=cleared_positions,
                                 open_close="close",
@@ -194,11 +201,10 @@ class TradingDesk:
                                 collateral_short=self.collateral_short,
                                 capital=self.capital,
                                 logger=self.logger)
+            """
         
             if not self.positions_holding: # If self.positions_holding is empty
                 self.logger.info("All positions are cleared")
-
-            # self.logger.info(f"After step 1, cleared_positions = {cleared_positions}")
 
         else:
             self.logger.info("No open position. Position clearing has been skipped.")
@@ -389,8 +395,6 @@ class TradingDesk:
         # self.logger.info(f"positions_holding = {self.positions_holding}")
         
         self.logger.info("Step 3 is finished.")
-        self.logger.info("===================================================================================")
-        self.logger.info("")
         self.logger.info("")
 
     def run_strategy(self,
@@ -415,3 +419,34 @@ class TradingDesk:
                 self.logger.info("No open position. Session terminates immediately.")
 
             scheduler.shutdown(wait=False)
+
+    def observe_and_clear(self,
+                          scheduler):
+
+        for position in self.positions_holding[:]: # Iterate over a shallow copy
+            if position.quantity != 0: # If currently holding this asset
+
+                price_entry = position.entry_price
+                fetched_price = self.api_handler.get_current_price(symbol=position.symbol)
+
+
+                if position.position*((fetched_price/price_entry)-1) > 0.015: 
+                    position_for_clearing = -1*position.position
+                    res = self.close_position(symbol=position.symbol)
+
+                    price_clear = float(res["avgPrice"])
+                    side = "BUY" if position.position==1 else "SELL"
+                    self.logger.info(f"Early-cleared {side} position of {position.symbol}. Return: {(price_clear/price_entry-1)*100:.3f}%.")
+
+                    self.positions_holding.remove(position)
+
+                    # Update balance status
+                    if position.position==1:
+                        self.collateral_long -= abs(position.amount)
+                    if position.position==-1:
+                        self.collateral_short -= abs(position.amount)
+
+                    position_for_clearing = -1*position.position
+                    amount_clearing_after_fee = float(res["cumQuote"])*(1 + position_for_clearing*self.transaction_cost)  # `Fee deducted`
+                    self.capital += amount_clearing_after_fee
+
