@@ -99,8 +99,23 @@ class TradingDesk:
 
 
     def close_position(self, 
-                       symbol:str):
-        open_position = self.api_handler.fetch_position(symbol=symbol)
+                       symbol:str,
+                       max_retries:int = 5,
+                       delay:float = 0.5):
+        open_position = []
+
+        # Retry logic when API returns empty list
+        for attempt in range(max_retries):
+            open_position = self.api_handler.fetch_position(symbol=symbol)
+
+            if open_position:  # non-empty list → success
+                break
+
+            if attempt < max_retries - 1:
+                time.sleep(delay)
+            else:
+                raise ValueError(f"Failed to fetch position for {symbol} after {max_retries} retries.") 
+            
         quantity = float(open_position[0]["positionAmt"])
         quantity_to_clear = abs(quantity)
 
