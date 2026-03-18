@@ -158,7 +158,7 @@ class TradingDesk:
                         # Logging
                         price_entry = position.entry_price
                         price_clear = float(res["avgPrice"])
-                        self.logger.info(f"Cleared position of {position.symbol}. Return: {(price_clear/price_entry-1)*100:.2f}%.")
+                        self.logger.info(f"Cleared position of {position.symbol}. Approx. return: {position.position*(price_clear/price_entry-1)*100:.2f}%.")
 
                         amount_clearing_after_fee = float(res["cumQuote"])*(1 + position_for_clearing*self.transaction_cost)  # `Fee deducted`
 
