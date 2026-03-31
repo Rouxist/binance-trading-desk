@@ -317,7 +317,7 @@ class TradingDesk:
                                      f"the calculated order quantity {quantity_rounded_down} is "
                                      f"below the current minimum order quantity {min_order_quantity}.")
                     
-                    position.quantity = -1
+                    position.quantity = 0
                     position.entry_price = 0
                     position.amount = 0
                     self.positions_holding.append(position)
