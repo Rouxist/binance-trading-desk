@@ -5,6 +5,7 @@ from requests import Session, exceptions
 from requests.exceptions import Timeout, HTTPError, RequestException
 from urllib.parse import urlencode
 import time
+import uuid
 from typing import Optional
 
 class APIHandler:
@@ -270,7 +271,7 @@ class APIHandler:
     
 
     # Order-related endpoints
-    def place_market_order(self,
+    def old_place_market_order(self,
                            symbol:str,
                            side:str,
                            quantity:float):
@@ -292,3 +293,90 @@ class APIHandler:
                               signed=True)
         
         return response
+
+
+    def place_market_order(self,
+                           symbol: str,
+                           side: str,
+                           quantity: float):
+        """
+        Place Buy/Sell market order safely (handles -1007 timeout).
+        """
+
+        client_order_id = str(uuid.uuid4())
+
+        params = {
+            "symbol": symbol,
+            "side": side,
+            "type": "MARKET",
+            "quantity": quantity,
+            "newOrderRespType": "RESULT",
+            "newClientOrderId": client_order_id
+        }
+
+        try:
+            response = self.fetch(
+                endpoint="/fapi/v1/order",
+                method="POST",
+                params=params,
+                signed=True
+            )
+            return response
+
+        except Exception as e:
+
+            # 🔥 Handle Binance timeout (-1007)
+            if "-1007" in str(e):
+
+                # Step 1: Check if order actually exists
+                for _ in range(5):
+                    time.sleep(0.5)
+
+                    try:
+                        order = self.fetch(
+                            endpoint="/fapi/v1/order",
+                            method="GET",
+                            params={
+                                "symbol": symbol,
+                                "origClientOrderId": client_order_id
+                            },
+                            signed=True
+                        )
+
+                        if order:
+                            return order  # ✅ Order was placed
+
+                    except Exception:
+                        pass  # keep retrying
+
+                # Step 2: Final fallback → check position (optional but powerful)
+                try:
+                    position = self.fetch(
+                        endpoint="/fapi/v3/positionRisk",
+                        method="GET",
+                        params={"symbol": symbol},
+                        signed=True
+                    )
+
+                    if position and abs(float(position[0]["positionAmt"])) > 0:
+                        # Position changed → assume order executed
+                        return {
+                            "status": "UNKNOWN_BUT_POSITION_CHANGED",
+                            "clientOrderId": client_order_id
+                        }
+
+                except Exception:
+                    pass
+
+                # Step 3: Safe retry (only once)
+                return self.fetch(
+                    endpoint="/fapi/v1/order",
+                    method="POST",
+                    params=params,
+                    signed=True
+                )
+
+            # Other errors → raise
+            else:
+                raise e
+
