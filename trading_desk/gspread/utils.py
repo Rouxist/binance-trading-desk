@@ -12,7 +12,7 @@ def get_cell_value(worksheet, cell: str, logger=None, max_retries=5):
             if e.response.status_code == 503:
                 wait_time = 2 ** attempt  # exponential backoff: 1, 2, 4, 8, 16 s
                 if logger:
-                    logger.warning(f"503 error in {func.__name__}. Error cnt: {attempt+1}. Retrying in {wait_time}s...")
+                    logger.warning(f"503 error in get_cell_value(). Error cnt: {attempt+1}. Retrying in {wait_time}s...")
                 else:
                     print(f"503 error on {cell}, retrying in {wait_time}s...")
                 time.sleep(wait_time)
