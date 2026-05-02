@@ -1,13 +1,3 @@
-import datetime
-import hashlib
-import hmac
-from requests import Session, exceptions
-from requests.exceptions import Timeout, HTTPError, RequestException
-from urllib.parse import urlencode
-import time
-import uuid
-from typing import Optional
-
 class APIHandler:
     def __init__(self,
                  binance_api_key:str,
@@ -17,8 +7,91 @@ class APIHandler:
         self.binance_api_key = binance_api_key
         self.binance_secret_key = binance_secret_key
 
-
+    # Further prevents recvWindow error that again occurred from '/fapi/v2/balance'
     def fetch(self,
+              endpoint: str,
+              method: str,
+              *,
+              headers: Optional[dict] = None,
+              params: Optional[dict] = None,
+              data: Optional[dict] = None,
+              signed: bool = False,
+              timeout: int = 10,
+              max_retries: int = 1):
+
+        url = self.base_url + endpoint
+
+        base_params = params.copy() if params else {}
+        headers = headers.copy() if headers else {}
+
+        for attempt in range(max_retries + 1):
+            request_params = base_params.copy()
+
+            if signed:
+                request_params.pop("signature", None)
+
+                # To prevent recvWindow error that once occurred from '/fapi/v3/positionRisk': 
+                # {"code":-1021,"msg":"Timestamp for this request is outside of the recvWindow."}
+                server_time = self.get_server_time(is_unix=True)
+                local_time = int(datetime.datetime.now(datetime.timezone.utc).timestamp() * 1000)
+                offset = server_time - local_time
+
+                request_params["timestamp"] = (
+                    int(datetime.datetime.now(datetime.timezone.utc).timestamp() * 1000)
+                    + offset
+                )
+
+                request_params.setdefault("recvWindow", 10000)
+
+                query_string = urlencode(request_params)
+                signature = hmac.new(
+                    self.binance_secret_key.encode("utf-8"),
+                    query_string.encode("utf-8"),
+                    hashlib.sha256
+                ).hexdigest()
+
+                request_params["signature"] = signature
+                headers["X-MBX-APIKEY"] = self.binance_api_key
+
+            try:
+                response = self.session.request(
+                    method=method.upper(),
+                    url=url,
+                    headers=headers,
+                    params=request_params,
+                    data=data,
+                    timeout=timeout
+                )
+
+                try:
+                    json_response = response.json()
+                except ValueError:
+                    json_response = None
+
+                if (
+                    signed
+                    and response.status_code == 400
+                    and isinstance(json_response, dict)
+                    and json_response.get("code") == -1021
+                    and attempt < max_retries
+                ):
+                    continue
+
+                response.raise_for_status()
+                return json_response
+
+            except Timeout as e:
+                raise RuntimeError("Request timed out") from e
+
+            except HTTPError as e:
+                raise RuntimeError(
+                    f"HTTP error {response.status_code} for {url}: {response.text}"
+                ) from e
+
+            except RequestException as e:
+                raise RuntimeError(f"Request failed for {url}") from e
+    """
+    def fetch_old(self,
               endpoint:str,
               method:str, 
               *,
@@ -79,6 +152,7 @@ class APIHandler:
 
         if json_response is not None:
             return json_response
+    """
 
 
     # Market data endpoints
