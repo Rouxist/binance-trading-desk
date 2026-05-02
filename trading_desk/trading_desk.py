@@ -209,7 +209,6 @@ class TradingDesk:
                 self.positions_holding.remove(position)
      
             # After 
-            """
             add_transaction_log(worksheet=self.g_worksheets_mock,
                                 positions_to_record=cleared_positions,
                                 open_close="close",
@@ -217,7 +216,6 @@ class TradingDesk:
                                 collateral_short=self.collateral_short,
                                 capital=self.capital,
                                 logger=self.logger)
-            """
         
             if not self.positions_holding: # If self.positions_holding is empty
                 self.logger.info("All positions are cleared")
