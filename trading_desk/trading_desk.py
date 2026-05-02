@@ -250,7 +250,7 @@ class TradingDesk:
             klines = self.api_handler.fetch_klines(symbol=symbol,
                                                    every=self.every,
                                                    unit=self.unit,
-                                                   timesteps=21)
+                                                   timesteps=28)
             close_prices[symbol] = build_closing_price_series(klines)
 
         df = build_dataframe(close_prices)

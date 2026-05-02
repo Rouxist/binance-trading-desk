@@ -151,9 +151,9 @@ class PositionCalculator:
         momentum4: Do not trade highly volatile asset. Removed regime.
         """
         if self.strategy_name == "momentum4":
-            if len(data) != 21:
+            if len(data) != 28:
                 err = ValueError(
-                    f"DataFrame must have exactly 21 rows, got {len(data)}"
+                    f"DataFrame must have exactly 28 rows, got {len(data)}"
                 )
                 err.wrong_dataframe = data
 
