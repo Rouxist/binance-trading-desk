@@ -1,3 +1,4 @@
+import sys
 import time
 import math
 from .data_models import MainConfig
@@ -434,6 +435,7 @@ class TradingDesk:
                 self.logger.info("No open position. Session terminates immediately.")
 
             scheduler.shutdown(wait=False)
+            sys.exit(1)
 
     def observe_and_clear(self,
                           scheduler):
