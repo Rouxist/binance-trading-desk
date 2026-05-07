@@ -27,12 +27,17 @@ class APIHandler:
               data: Optional[dict] = None,
               signed: bool = False,
               timeout: int = 10,
-              max_retries: int = 1):
+              max_retries: int = 2):
 
         url = self.base_url + endpoint
 
         base_params = params.copy() if params else {}
         headers = headers.copy() if headers else {}
+
+        # Used when handling 10-seconds-timeout
+        is_order = endpoint == "/fapi/v1/order" and method.upper() == "POST"
+        if signed and is_order: # generate idempotency key for order
+            base_params.setdefault("newClientOrderId", str(uuid.uuid4()))
 
         for attempt in range(max_retries + 1):
             request_params = base_params.copy()
@@ -90,8 +95,35 @@ class APIHandler:
                 response.raise_for_status()
                 return json_response
 
-            except Timeout as e:
-                raise RuntimeError("Request timed out") from e
+            # To handle occasional Binance read timeout, avoiding duplicate order placement
+            # HTTPSConnectionPool(host='fapi.binance.com', port=443): Read timed out. (read timeout=10)
+            except Timeout:
+                if not (signed and is_order):
+                    if attempt < max_retries:
+                        time.sleep(1 + attempt)
+                        continue
+                    raise
+
+                # SAFE HANDLING WHEN TIMEOUT OCCURRED FROM ORDER
+                # check if order already exists
+                try:
+                    check = self.fetch(
+                        "/fapi/v1/order",
+                        "GET",
+                        params={
+                            "symbol": request_params["symbol"],
+                            "origClientOrderId": request_params["newClientOrderId"]
+                        },
+                        signed=True
+                    )
+                    return check  # order already exists
+
+                except Exception:
+                    # order not found -> retry
+                    if attempt < max_retries:
+                        time.sleep(1 + attempt)
+                        continue
+                    raise
 
             except HTTPError as e:
                 raise RuntimeError(
