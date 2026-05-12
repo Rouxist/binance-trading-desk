@@ -223,6 +223,11 @@ class TradingDesk:
         else:
             self.logger.info("No open position. Position clearing has been skipped.")
 
+        
+        res_bal = self.api_handler.get_balance(symbol="USDT")
+        self.logger.info(f"Balance: {float(res_bal['balance']):.2f} USDT")
+        self.logger.info("")
+
         self.logger.info("Step 1 is finished.")
         self.logger.info("")
 
