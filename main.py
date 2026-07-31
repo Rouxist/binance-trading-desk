@@ -42,11 +42,13 @@ if __name__ == "__main__":
                           minute=0,
                           kwargs={"scheduler": scheduler})
 
+    """
     if not config.is_mock:
         scheduler.add_job(trading_desk.observe_and_clear,
                           "cron",
                           #minute="5-59/5",
                           minute="3-59/3",
                           kwargs={"scheduler": scheduler})
+    """
 
     scheduler.start()
