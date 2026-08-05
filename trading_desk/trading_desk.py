@@ -127,7 +127,8 @@ class TradingDesk:
 
         res = self.api_handler.place_market_order(symbol=symbol,
                                                   side=side, 
-                                                  quantity=quantity_to_clear)
+                                                  quantity=quantity_to_clear,
+                                                  reduce_only=True)
 
         return res
 
@@ -173,17 +174,24 @@ class TradingDesk:
 
                         # Logging
                         price_entry = position.entry_price
-                        price_clear = float(res["avgPrice"])
+
+
+                        ## price_clear = float(res["avgPrice"]) # deprecated (2026.07.31)
+                        res2 = self.api_handler.fetch_order(symbol=position.symbol,
+                                                            order_id=res["orderId"])
+                        price_clear = float(res2["avgPrice"])
+
+
                         position_type = "LONG" if position.position == 1 else "SHORT"
                         self.logger.info(f"Cleared {position_type} position of {position.symbol}. Approx. return: {position.position*(price_clear/price_entry-1)*100:.2f}%.")
 
-                        amount_clearing_after_fee = float(res["cumQuote"])*(1 + position_for_clearing*self.transaction_cost)  # `Fee deducted`
+                        amount_clearing_after_fee = float(res2["cumQuote"])*(1 + position_for_clearing*self.transaction_cost)  # `Fee deducted`
 
                         cleared_position = Position(
                                             symbol=position.symbol,
                                             position=position_for_clearing,
                                             fetched_price=fetched_price,
-                                            entry_price=float(res["avgPrice"]),
+                                            entry_price=price_clear,
                                             quantity=float(res["executedQty"]),
                                             amount=amount_clearing_after_fee
                                         )
@@ -375,8 +383,20 @@ class TradingDesk:
                     
                     # Update position information based on the response
                     position.quantity = float(res["executedQty"]) # negative if short position
-                    position.entry_price = float(res["avgPrice"])
-                    order_amount_after_fee = -1*position.position*float(res["cumQuote"])*(1 + position.position*self.transaction_cost)  # `Fee deducted`
+
+
+                    ## position.entry_price = float(res["avgPrice"]) # deprecated 2026.07.31
+                    res2 = self.api_handler.fetch_order(symbol=position.symbol,
+                                                        order_id=res["orderId"])
+                    position.entry_price = float(res2["avgPrice"])
+
+                    
+                    # for debugging
+                    self.logger.info(f"Position for {position.symbol} is opened at price of  {float(res2["avgPrice"])}USDT, with quantity of {float(res["executedQty"])}")
+
+
+
+                    order_amount_after_fee = -1*position.position*float(res2["cumQuote"])*(1 + position.position*self.transaction_cost)  # `Fee deducted`
                     position.amount = order_amount_after_fee
 
                     # Update balance status

@@ -8,6 +8,9 @@ import time
 import uuid
 from typing import Optional
 
+class OrderExecutionUnknown(RuntimeError):
+    pass
+
 class APIHandler:
     def __init__(self,
                  binance_api_key:str,
@@ -98,6 +101,7 @@ class APIHandler:
             # To handle occasional Binance read timeout, avoiding duplicate order placement
             # HTTPSConnectionPool(host='fapi.binance.com', port=443): Read timed out. (read timeout=10)
             except Timeout:
+                """
                 if not (signed and is_order):
                     if attempt < max_retries:
                         time.sleep(1 + attempt)
@@ -124,6 +128,22 @@ class APIHandler:
                         time.sleep(1 + attempt)
                         continue
                     raise
+                """
+                # To prevent overlapping retry logic with that of place_market_order() (2026.08.04)
+                if signed and is_order:
+                    # The order may already have executed.
+                    # Never continue the outer POST loop.
+                    raise OrderExecutionUnknown(
+                        "Order request timed out; execution status is unknown."
+                    ) from e
+
+                if attempt < max_retries:
+                    # for debugging
+                    self.logger.info(f"Timeout occurred from fetch(). Retry in {1+attempt} seconds.")
+                    time.sleep(1 + attempt)
+                    continue
+                raise
+
 
             except HTTPError as e:
                 raise RuntimeError(
@@ -132,69 +152,6 @@ class APIHandler:
 
             except RequestException as e:
                 raise RuntimeError(f"Request failed for {url}") from e
-    """
-    def fetch_old(self,
-              endpoint:str,
-              method:str, 
-              *,
-              headers: Optional[dict]=None,
-              params: Optional[dict]=None,
-              data: Optional[dict]=None,
-              signed: bool=False,
-              timeout: int = 10):
-
-        url = self.base_url + endpoint
-
-        params = params.copy() if params else {}
-        headers = headers.copy() if headers else {}
-
-        if signed:
-
-            # To prevent recvWindow error that once occurred from '/fapi/v3/positionRisk': 
-            # {"code":-1021,"msg":"Timestamp for this request is outside of the recvWindow."}
-            server_time= self.get_server_time(is_unix=True)
-            offset = server_time - int(datetime.datetime.now(datetime.timezone.utc).timestamp() * 1000)
-
-            params.setdefault(
-                "timestamp",
-                int(datetime.datetime.now(datetime.timezone.utc).timestamp() * 1000) + offset
-            )
-
-            query_string = urlencode(params)
-            signature = hmac.new(
-                self.binance_secret_key.encode("utf-8"),
-                query_string.encode("utf-8"),
-                hashlib.sha256
-            ).hexdigest()
-
-            params["signature"] = signature
-            headers["X-MBX-APIKEY"] = self.binance_api_key
-            
-        try:
-            response = self.session.request(method=method.upper(),
-                                            url=url,
-                                            headers=headers,
-                                            params=params,
-                                            data=data,
-                                            timeout=timeout)
-
-            json_response = response.json()
-            response.raise_for_status()
-
-        except Timeout as e:
-            raise RuntimeError("Request timed out") from e
-
-        except HTTPError as e:
-            raise RuntimeError(
-                f"HTTP error {response.status_code} for {url}: {response.text}"
-            ) from e
-
-        except RequestException as e:
-            raise RuntimeError(f"Request failed for {url}") from e
-
-        if json_response is not None:
-            return json_response
-    """
 
 
     # Market data endpoints
@@ -414,9 +371,13 @@ class APIHandler:
     def place_market_order(self,
                            symbol: str,
                            side: str,
-                           quantity: float):
+                           quantity: float,
+                           reduce_only: bool = False):
         """
         Place Buy/Sell market order safely (handles -1007 timeout).
+
+        - Do not retry POST requests to prevent duplicate order placement
+        - Added 'reduceOnly' for position-closing request
         """
 
         client_order_id = str(uuid.uuid4())
@@ -430,69 +391,105 @@ class APIHandler:
             "newClientOrderId": client_order_id
         }
 
+        if reduce_only:
+            params["reduceOnly"] = "true"
+
         try:
             response = self.fetch(
                 endpoint="/fapi/v1/order",
                 method="POST",
                 params=params,
-                signed=True
+                signed=True,
+                max_retries=0
             )
             return response
 
         except Exception as e:
+            is_unknown_execution = (
+                isinstance(e, OrderExecutionUnknown)
+                or "-1007" in str(e) # -1007: Binance Timeout error
+            )
 
-            # 🔥 Handle Binance timeout (-1007)
-            if "-1007" in str(e):
+            if not is_unknown_execution:
+                raise
 
-                # Step 1: Check if order actually exists
-                for _ in range(5):
-                    time.sleep(0.5)
+        # From this point onward, never resend the POST.
+        last_error = None
 
-                    try:
-                        order = self.fetch(
-                            endpoint="/fapi/v1/order",
-                            method="GET",
-                            params={
-                                "symbol": symbol,
-                                "origClientOrderId": client_order_id
-                            },
-                            signed=True
-                        )
-
-                        if order:
-                            return order  # ✅ Order was placed
-
-                    except Exception:
-                        pass  # keep retrying
-
-                # Step 2: Final fallback → check position (optional but powerful)
-                try:
-                    position = self.fetch(
-                        endpoint="/fapi/v3/positionRisk",
-                        method="GET",
-                        params={"symbol": symbol},
-                        signed=True
-                    )
-
-                    if position and abs(float(position[0]["positionAmt"])) > 0:
-                        # Position changed → assume order executed
-                        return {
-                            "status": "UNKNOWN_BUT_POSITION_CHANGED",
-                            "clientOrderId": client_order_id
-                        }
-
-                except Exception:
-                    pass
-
-                # Step 3: Safe retry (only once)
+        for delay in (0.5, 1.0, 2.0, 3.0, 5.0):
+            time.sleep(delay)
+            try:
                 return self.fetch(
                     endpoint="/fapi/v1/order",
-                    method="POST",
-                    params=params,
-                    signed=True
+                    method="GET",
+                    params={
+                        "symbol": symbol,
+                        "origClientOrderId": client_order_id,
+                    },
+                    signed=True,
+                    max_retries=0,
                 )
 
-            # Other errors → raise
-            else:
-                raise e
+            except Exception as query_error:
+                last_error = query_error
 
+                # Ideally inspect a structured Binance error code here.
+                if "-2013" in str(query_error):
+                    continue
+
+                if isinstance(query_error, OrderExecutionUnknown):
+                    continue
+                raise
+
+        raise OrderExecutionUnknown(
+            "The order request had unknown execution status and could not "
+            "be confirmed. The order was not resent. "
+            f"symbol={symbol}, clientOrderId={client_order_id}"
+        ) from last_error
+
+
+    def fetch_order(self,
+                    symbol: str,
+                    order_id: int,
+                    max_retries: int = 5,
+                    delay: float = 0.3):
+        """
+        Motivation
+        - Response from POST '/fapi/v1/order' may not include 'avgPrice' field
+        - This function is to get 'avgPrice' from placed order
+        
+        Retry Logic
+        - Retry when "Order does not exist" error occur. (-2013 error)
+          - Can happen when 'GET /fapi/v1/order' is executed immediately after 'POST /fapi/v1/order', because the POST request may take longer to be processed
+        """
+
+        params = {
+            "symbol": symbol,
+            "orderId": order_id,
+        }
+
+        last_error = None
+
+        for attempt in range(max_retries):
+            try:
+                return self.fetch(
+                    endpoint="/fapi/v1/order",
+                    method="GET",
+                    params=params,
+                    signed=True,
+                )
+
+            except RuntimeError as error:
+                last_error = error
+                error_message = str(error)
+
+                if '"code":-2013' not in error_message: # Retry only temporary "Order does not exist" responses.
+                    raise
+
+                if attempt < max_retries - 1:
+                    time.sleep(delay * (attempt + 1))
+
+        raise RuntimeError(
+            f"Order could not be found after {max_retries} attempts: "
+            f"symbol={symbol}, order_id={order_id}"
+        ) from last_error
