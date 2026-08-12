@@ -100,35 +100,7 @@ class APIHandler:
 
             # To handle occasional Binance read timeout, avoiding duplicate order placement
             # HTTPSConnectionPool(host='fapi.binance.com', port=443): Read timed out. (read timeout=10)
-            except Timeout:
-                """
-                if not (signed and is_order):
-                    if attempt < max_retries:
-                        time.sleep(1 + attempt)
-                        continue
-                    raise
-
-                # SAFE HANDLING WHEN TIMEOUT OCCURRED FROM ORDER
-                # check if order already exists
-                try:
-                    check = self.fetch(
-                        "/fapi/v1/order",
-                        "GET",
-                        params={
-                            "symbol": request_params["symbol"],
-                            "origClientOrderId": request_params["newClientOrderId"]
-                        },
-                        signed=True
-                    )
-                    return check  # order already exists
-
-                except Exception:
-                    # order not found -> retry
-                    if attempt < max_retries:
-                        time.sleep(1 + attempt)
-                        continue
-                    raise
-                """
+            except Timeout as e:
                 # To prevent overlapping retry logic with that of place_market_order() (2026.08.04)
                 if signed and is_order:
                     # The order may already have executed.
@@ -139,7 +111,7 @@ class APIHandler:
 
                 if attempt < max_retries:
                     # for debugging
-                    self.logger.info(f"Timeout occurred from fetch(). Retry in {1+attempt} seconds.")
+                    print(f"Timeout occurred from fetch(). Retry in {1+attempt} seconds.")
                     time.sleep(1 + attempt)
                     continue
                 raise
@@ -427,7 +399,7 @@ class APIHandler:
                         "origClientOrderId": client_order_id,
                     },
                     signed=True,
-                    max_retries=0,
+                    max_retries=5,
                 )
 
             except Exception as query_error:
